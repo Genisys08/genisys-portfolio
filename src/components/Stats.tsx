@@ -1,0 +1,80 @@
+import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
+
+interface StatItem { value: number; suffix: string; label: string; }
+
+const STATS: StatItem[] = [
+  { value: 51,  suffix: "+", label: "Projects Delivered" },
+  { value: 100, suffix: "%", label: "Client Retention"   },
+  { value: 3,   suffix: "",  label: "Countries Reached"  },
+  { value: 5,   suffix: "★", label: "Average Rating"     },
+];
+
+function Counter({ value, suffix }: { value: number; suffix: string }) {
+  const [count, setCount]   = useState(0);
+  const elRef               = useRef<HTMLDivElement>(null);
+  const started             = useRef(false);
+
+  useEffect(() => {
+    const DURATION = 1800;
+    const trigger = () => {
+      if (started.current) return;
+      started.current = true;
+      const start = performance.now();
+      const tick = (now: number) => {
+        const t       = Math.min((now - start) / DURATION, 1);
+        const eased   = 1 - Math.pow(1 - t, 3); // ease-out cubic
+        setCount(Math.floor(eased * value));
+        if (t < 1) requestAnimationFrame(tick);
+        else setCount(value);
+      };
+      requestAnimationFrame(tick);
+    };
+
+    // Fallback: fire after 1.5 s regardless (Termux WebView IO can be unreliable)
+    const fallback = setTimeout(trigger, 1500);
+
+    let obs: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver !== "undefined" && elRef.current) {
+      obs = new IntersectionObserver(
+        ([entry]) => { if (entry.isIntersecting) { clearTimeout(fallback); trigger(); } },
+        { threshold: 0.4 },
+      );
+      obs.observe(elRef.current);
+    }
+
+    return () => { clearTimeout(fallback); obs?.disconnect(); };
+  }, [value]);
+
+  return (
+    <div ref={elRef} className="font-display font-black text-5xl sm:text-6xl gold-text tabular-nums">
+      {count}{suffix}
+    </div>
+  );
+}
+
+export default function Stats() {
+  return (
+    <section className="relative px-4 sm:px-8 py-20">
+      <div className="max-w-6xl mx-auto">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+          {STATS.map((s, i) => (
+            <motion.div
+              key={s.label}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-40px" }}
+              transition={{ duration: 0.55, delay: i * 0.1, ease: [0.7, 0, 0.3, 1] }}
+              className="glass-strong specular grain rounded-2xl p-6 sm:p-8 text-center"
+            >
+              <Counter value={s.value} suffix={s.suffix} />
+              <div className="mt-2 font-mono text-[10px] tracking-[0.3em] text-gold/70">
+                {s.label.toUpperCase()}
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}

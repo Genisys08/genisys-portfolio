@@ -1,26 +1,20 @@
-import { useScramble }       from "@/hooks/useScramble";
-import { useGyroscopeTilt }  from "@/contexts/GyroscopeContext";
-import { useMagnetic }       from "@/hooks/useMagnetic";
-import { useReducedMotion }  from "@/hooks/useReducedMotion";
+import { useScramble } from "@/hooks/useScramble";
+import { useGyroscope } from "@/hooks/useGyroscope";
+import { useMagnetic } from "@/hooks/useMagnetic";
 
 export default function Hero() {
-  const t       = useGyroscopeTilt();
-  const reduced = useReducedMotion();
+  const t = useGyroscope();
   const eyebrow = useScramble("STUDIO // EST. CINEMA", 1200);
-  const title1  = useScramble("OPERATIC", 1100);
-  const title2  = useScramble("BRAND SYSTEMS", 1400);
-  const sub     = useScramble("Pitch-black aesthetics. Metallic gold execution.", 1600);
-  const ctaRef  = useMagnetic<HTMLAnchorElement>(0.3);
+  const title1 = useScramble("OPERATIC", 1100);
+  const title2 = useScramble("BRAND SYSTEMS", 1400);
+  const sub = useScramble("Pitch-black aesthetics. Metallic gold execution.", 1600);
+  const ctaRef = useMagnetic<HTMLAnchorElement>(0.3);
 
   return (
     <section id="top" className="relative min-h-[100dvh] grid place-items-center px-6 pt-28 pb-32">
       <div
         className="text-center max-w-4xl"
-        style={{
-          transform: reduced
-            ? undefined
-            : `translate3d(${t.x * -10}px, ${t.y * -8}px, 0)`,
-        }}
+        style={{ transform: `translate3d(${t.x * -10}px, ${t.y * -8}px, 0)` }}
       >
         <div className="font-mono text-[10px] sm:text-xs tracking-[0.5em] text-gold/70">{eyebrow}</div>
         <h1 className="mt-6 font-display font-black tracking-tight leading-[0.95] text-[15vw] sm:text-[110px] gold-text chromatic">

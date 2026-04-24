@@ -4,18 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#000000" />
-    <title>Genisys Graphics — Operatic Brand &amp; Identity Design</title>
+    <title>Genisys Graphics — Operatic Brand & Identity Design</title>
     <meta name="description" content="Genisys Graphics is a high-end design studio crafting operatic brand identities, flyers, and logo systems." />
 
-    <meta property="og:type"        content="website" />
-    <meta property="og:title"       content="Genisys Graphics — Operatic Brand &amp; Identity Design" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Genisys Graphics — Operatic Brand & Identity Design" />
     <meta property="og:description" content="High-end design studio. Pitch-black aesthetics. Metallic gold execution." />
-    <meta property="og:image"       content="https://genisys-portfolio.vercel.app/og-preview.jpg" />
-    <meta property="og:url"         content="https://genisys-portfolio.vercel.app/" />
+    <meta property="og:image" content="https://genisys-portfolio.vercel.app/og-preview.jpg" />
+    <meta property="og:url" content="https://genisys-portfolio.vercel.app/" />
 
-    <meta name="twitter:card"  content="summary_large_image" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://genisys-portfolio.vercel.app/og-preview.jpg" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
