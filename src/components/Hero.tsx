@@ -1,0 +1,38 @@
+import { useScramble } from "@/hooks/useScramble";
+import { useGyroscope } from "@/hooks/useGyroscope";
+import { useMagnetic } from "@/hooks/useMagnetic";
+
+export default function Hero() {
+  const t = useGyroscope();
+  const eyebrow = useScramble("STUDIO // EST. CINEMA", 1200);
+  const title1 = useScramble("OPERATIC", 1100);
+  const title2 = useScramble("BRAND SYSTEMS", 1400);
+  const sub = useScramble("Pitch-black aesthetics. Metallic gold execution.", 1600);
+  const ctaRef = useMagnetic<HTMLAnchorElement>(0.3);
+
+  return (
+    <section id="top" className="relative min-h-[100dvh] grid place-items-center px-6 pt-28 pb-32">
+      <div
+        className="text-center max-w-4xl"
+        style={{ transform: `translate3d(${t.x * -10}px, ${t.y * -8}px, 0)` }}
+      >
+        <div className="font-mono text-[10px] sm:text-xs tracking-[0.5em] text-gold/70">{eyebrow}</div>
+        <h1 className="mt-6 font-display font-black tracking-tight leading-[0.95] text-[15vw] sm:text-[110px] gold-text chromatic">
+          {title1}
+        </h1>
+        <h1 className="font-display font-black tracking-tight leading-[0.95] text-[15vw] sm:text-[110px] text-cream/90 chromatic">
+          {title2}
+        </h1>
+        <p className="mt-8 text-cream/70 text-sm sm:text-base max-w-md mx-auto">{sub}</p>
+        <a
+          ref={ctaRef}
+          href="#work"
+          data-magnetic
+          className="mt-10 inline-flex items-center gap-3 px-7 py-3 rounded-full glass-strong gold-border-glow font-mono text-xs tracking-[0.3em] text-gold hover:text-cream transition-colors"
+        >
+          ENTER THE WORK →
+        </a>
+      </div>
+    </section>
+  );
+}
