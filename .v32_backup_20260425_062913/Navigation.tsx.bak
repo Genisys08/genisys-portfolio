@@ -1,0 +1,143 @@
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Menu, X } from "lucide-react";
+import { useScramble } from "@/hooks/useScramble";
+import { useMagnetic } from "@/hooks/useMagnetic";
+
+const LINKS = [
+  { id: "work",    label: "WORK"    },
+  { id: "about",   label: "ABOUT"   },
+  { id: "process", label: "PROCESS" },
+];
+
+function NavLink({
+  id, label, active, onClick,
+}: { id: string; label: string; active?: boolean; onClick?: () => void }) {
+  const text = useScramble(label, 700);
+  const ref  = useMagnetic<HTMLAnchorElement>(0.3);
+  return (
+    <a
+      ref={ref}
+      href={`#${id}`}
+      onClick={onClick}
+      className={
+        "font-mono text-[11px] tracking-[0.35em] transition-colors px-2 py-1 " +
+        (active ? "text-gold" : "text-cream/80 hover:text-gold")
+      }
+    >
+      {text}
+    </a>
+  );
+}
+
+export default function Navigation() {
+  const brand        = useScramble("GENISYS", 900);
+  const [open, setOpen]   = useState(false);
+  const [active, setActive] = useState<string>("");
+  const menuRef            = useMagnetic<HTMLButtonElement>(0.25);
+
+  // Active section tracking via IntersectionObserver
+  useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(e => { if (e.isIntersecting) setActive(e.target.id); });
+      },
+      { rootMargin: "-30% 0px -60% 0px", threshold: 0 },
+    );
+    LINKS.forEach(l => {
+      const el = document.getElementById(l.id);
+      if (el) obs.observe(el);
+    });
+    return () => obs.disconnect();
+  }, []);
+
+  // Body scroll lock — uses explicit overflow:hidden + padding compensation
+  useEffect(() => {
+    if (!open) return;
+    const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.overflow        = "hidden";
+    document.body.style.paddingRight    = scrollBarWidth + "px";
+    return () => {
+      document.body.style.overflow     = "";
+      document.body.style.paddingRight = "";
+    };
+  }, [open]);
+
+  const close = () => setOpen(false);
+
+  return (
+    <>
+      <header className="fixed top-0 left-0 right-0 z-[70] flex items-center justify-between px-4 sm:px-8 pt-4">
+        <a href="#top" className="font-display font-black text-base sm:text-lg gold-text tracking-tight">
+          {brand}
+        </a>
+
+        {/* Desktop links */}
+        <nav className="hidden sm:flex items-center gap-1 glass rounded-full px-3 py-1.5">
+          {LINKS.map(l => (
+            <NavLink key={l.id} {...l} active={active === l.id} />
+          ))}
+        </nav>
+
+        {/* Mobile hamburger — isTouch-agnostic: shown on sm:hidden breakpoint */}
+        <button
+          ref={menuRef}
+          onClick={() => setOpen(true)}
+          aria-label="Open navigation"
+          className="sm:hidden grid place-items-center w-10 h-10 rounded-full glass gold-border-glow"
+        >
+          <Menu className="w-4 h-4 text-gold" />
+        </button>
+      </header>
+
+      {/* Mobile full-screen overlay */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, clipPath: "circle(0% at 95% 5%)" }}
+            animate={{ opacity: 1, clipPath: "circle(150% at 95% 5%)" }}
+            exit={{   opacity: 0, clipPath: "circle(0% at 95% 5%)" }}
+            transition={{ duration: 0.5, ease: [0.7, 0, 0.3, 1] }}
+            className="fixed inset-0 z-[150] grid place-items-center sm:hidden"
+            style={{ background: "rgba(0,0,0,0.97)", backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)" }}
+          >
+            <button
+              onClick={close}
+              aria-label="Close navigation"
+              className="absolute top-5 right-5 grid place-items-center w-11 h-11 rounded-full glass-strong gold-border-glow"
+            >
+              <X className="w-5 h-5 text-gold" />
+            </button>
+
+            <nav className="flex flex-col items-center gap-10">
+              {LINKS.map((l, i) => (
+                <motion.a
+                  key={l.id}
+                  href={`#${l.id}`}
+                  onClick={close}
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.45, delay: 0.1 + i * 0.09, ease: [0.7, 0, 0.3, 1] }}
+                  className="font-display font-black text-5xl gold-text tracking-tight"
+                >
+                  {l.label}
+                </motion.a>
+              ))}
+
+              <motion.button
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.45, delay: 0.1 + LINKS.length * 0.09, ease: [0.7, 0, 0.3, 1] }}
+                onClick={() => { close(); window.dispatchEvent(new Event("open-contact")); }}
+                className="mt-2 px-8 py-3 rounded-full glass-strong gold-border-glow font-mono text-xs tracking-[0.3em] text-gold"
+              >
+                START A PROJECT
+              </motion.button>
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}

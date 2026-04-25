@@ -7,23 +7,22 @@ import GoldDustTrail             from "@/components/GoldDustTrail";
 import Preloader                 from "@/components/Preloader";
 import VibeToggle                from "@/components/VibeToggle";
 import Navigation                from "@/components/Navigation";
+import Hero                      from "@/components/Hero";
+import Gallery                   from "@/components/Gallery";
+import Stats                     from "@/components/Stats";
+import About                     from "@/components/About";
+import Testimonials              from "@/components/Testimonials";
+import Process                   from "@/components/Process";
+import Footer                    from "@/components/Footer";
 import ContactModal              from "@/components/ContactModal";
 import Letterbox                 from "@/components/Letterbox";
 import AuroraBackground          from "@/components/AuroraBackground";
 import ScrollVignette            from "@/components/ScrollVignette";
-import CookieBanner              from "@/components/CookieBanner";
-import BackToTop                 from "@/components/BackToTop";
-import HomePage                  from "@/pages/HomePage";
-import ServicesPage              from "@/pages/ServicesPage";
-import StudioPage                from "@/pages/StudioPage";
-import CaseStudyPage             from "@/pages/CaseStudyPage";
-import NotFoundPage              from "@/pages/NotFoundPage";
 import { useLenis }              from "@/hooks/useLenis";
 import { useVhFix }              from "@/hooks/useVhFix";
 import { useReducedMotion }      from "@/hooks/useReducedMotion";
 import { GyroscopeProvider }     from "@/contexts/GyroscopeContext";
 import { getDeviceTier }         from "@/lib/deviceTier";
-import { useRouter }             from "@/lib/router";
 
 const TIER = getDeviceTier();
 
@@ -31,9 +30,8 @@ export default function App() {
   const [loaded, setLoaded]    = useState(false);
   const [contactOpen, setOpen] = useState(false);
   const reduced = useReducedMotion();
-  const route   = useRouter();
   useLenis();
-  useVhFix();
+  useVhFix();   // COMPAT-1: writes --vh for iOS Safari dvh fallback
 
   useEffect(() => {
     const h = () => setOpen(true);
@@ -43,43 +41,38 @@ export default function App() {
 
   const showEmbers   = !reduced && TIER !== "low";
   const showGoldDust = !reduced && TIER === "high";
-  const showAurora   = !reduced && TIER !== "low";
-
-  const renderPage = () => {
-    switch (route.page) {
-      case "home":
-        return <HomePage onContact={() => setOpen(true)} />;
-      case "services":
-        return <ServicesPage onContact={() => setOpen(true)} />;
-      case "studio":
-        return <StudioPage onContact={() => setOpen(true)} />;
-      case "case-study":
-        return <CaseStudyPage id={route.id} onContact={() => setOpen(true)} />;
-      default:
-        return <NotFoundPage />;
-    }
-  };
+  const showAurora   = !reduced && TIER !== "low";   // AESTHETIC-1
 
   return (
     <ErrorBoundary>
       <GyroscopeProvider>
-        {showAurora   && <AuroraBackground />}
+
+        {/* ── Background layers (z-order: aurora → liquid → embers) ─── */}
+        {showAurora && <AuroraBackground />}
         <LiquidCanvas />
         {showEmbers   && <EmberParticles />}
         {showGoldDust && <GoldDustTrail />}
 
+        {/* ── Overlay layers ──────────────────────────────────────────── */}
         <MagneticCursor />
         <Letterbox />
-        <ScrollVignette />
-        <CookieBanner />
-        <BackToTop />
+        <ScrollVignette />   {/* AESTHETIC-3 */}
 
         {!loaded && <Preloader onDone={() => setLoaded(true)} />}
         <VibeToggle />
 
+        {/* ── Page content ────────────────────────────────────────────── */}
         <div className="relative z-10">
-          <Navigation route={route} />
-          <main>{renderPage()}</main>
+          <Navigation />
+          <main>
+            <Hero />
+            <Gallery />
+            <Stats />
+            <About />
+            <Testimonials />
+            <Process />
+          </main>
+          <Footer onContact={() => setOpen(true)} />
         </div>
 
         <ContactModal open={contactOpen} onClose={() => setOpen(false)} />

@@ -1,42 +1,116 @@
-import { useScramble } from "@/hooks/useScramble";
-import { haptic } from "@/lib/haptics";
+import { useScramble }  from "@/hooks/useScramble";
+import { haptic }       from "@/lib/haptics";
+import { SOCIAL, STUDIO } from "@/data/siteConfig";
+import { navigatePage, navigateSection } from "@/lib/router";
+
+const SOCIAL_LABELS: Record<string, string> = {
+  instagram: "Instagram", twitter: "X / Twitter", behance: "Behance",
+  dribbble: "Dribbble", tiktok: "TikTok", linkedin: "LinkedIn",
+  youtube: "YouTube", pinterest: "Pinterest",
+};
+
+const SOCIAL_SHORT: Record<string, string> = {
+  instagram: "IG", twitter: "X", behance: "BE",
+  dribbble: "DR", tiktok: "TK", linkedin: "LI",
+  youtube: "YT", pinterest: "PI",
+};
 
 interface Props { onContact: () => void; }
 
 export default function Footer({ onContact }: Props) {
   const sign = useScramble("GENISYS GRAPHICS // 2026", 900);
 
-  const handleContact = () => {
-    haptic([10, 30, 15]);
-    onContact();
-  };
+  const handleContact = () => { haptic([10, 30, 15]); onContact(); };
 
   return (
-    <footer className="relative px-6 pt-12 pb-28 mt-12">
-      <div className="max-w-5xl mx-auto border-t border-white/[0.06] pt-8">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex flex-col items-center sm:items-start gap-1">
-            <div className="font-mono text-[10px] tracking-[0.4em] text-gold/80">{sign}</div>
-            <div className="font-mono text-[9px] tracking-[0.25em] text-cream/50">
-              OPERATIC BRAND &amp; IDENTITY DESIGN
+    <footer className="relative px-6 pt-16 pb-28 mt-4">
+      <div className="max-w-5xl mx-auto">
+
+        {/* ── Top row ─────────────────────────────────────────────── */}
+        <div className="grid sm:grid-cols-3 gap-10 border-t border-white/[0.06] pt-10 mb-10">
+
+          {/* Brand column */}
+          <div>
+            <div className="font-display font-black text-2xl gold-text mb-2">Genisys</div>
+            <div className="font-mono text-[9px] tracking-[0.3em] text-cream/45 leading-relaxed mb-4">
+              OPERATIC BRAND &amp; IDENTITY DESIGN<br />
+              {STUDIO.location.toUpperCase()}
+            </div>
+            <a
+              href={`mailto:${STUDIO.email}`}
+              className="font-mono text-[10px] tracking-[0.2em] text-gold/65 hover:text-gold transition-colors"
+            >
+              {STUDIO.email}
+            </a>
+          </div>
+
+          {/* Site map */}
+          <div>
+            <div className="font-mono text-[9px] tracking-[0.4em] text-gold/60 mb-4">NAVIGATE</div>
+            <div className="space-y-2.5">
+              {[
+                { label: "Home",     fn: () => navigateSection("top") },
+                { label: "Work",     fn: () => navigateSection("work") },
+                { label: "Services", fn: () => navigatePage("services") },
+                { label: "Studio",   fn: () => navigatePage("studio") },
+                { label: "Process",  fn: () => navigateSection("process") },
+                { label: "FAQ",      fn: () => navigateSection("faq") },
+              ].map(link => (
+                <button
+                  key={link.label}
+                  onClick={link.fn}
+                  className="block font-mono text-[10px] tracking-[0.2em] text-cream/55 hover:text-gold transition-colors"
+                >
+                  {link.label.toUpperCase()}
+                </button>
+              ))}
             </div>
           </div>
 
-          <button
-            onClick={handleContact}
-            className="inline-flex items-center gap-2.5 px-7 py-3 rounded-full glass-strong gold-border-glow font-mono text-xs tracking-[0.35em] text-gold hover:text-cream transition-colors animate-border-pulse"
-          >
-            CONTACT
-            <span className="text-gold/70">→</span>
-          </button>
+          {/* Social column */}
+          <div>
+            <div className="font-mono text-[9px] tracking-[0.4em] text-gold/60 mb-4">FOLLOW THE WORK</div>
+            <div className="grid grid-cols-4 gap-2">
+              {Object.entries(SOCIAL).map(([platform, url]) => (
+                <a
+                  key={platform}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={SOCIAL_LABELS[platform]}
+                  className="aspect-square grid place-items-center rounded-xl font-mono text-[10px] font-bold transition-all duration-200 hover:scale-110 hover:border-gold/50"
+                  style={{
+                    background: "hsl(var(--gold)/0.07)",
+                    border:     "1px solid hsl(var(--gold)/0.18)",
+                    color:      "hsl(var(--gold)/0.65)",
+                  }}
+                >
+                  {SOCIAL_SHORT[platform]}
+                </a>
+              ))}
+            </div>
+            <p className="mt-3 font-mono text-[9px] tracking-[0.2em] text-cream/30 leading-relaxed">
+              Update handles in<br />
+              <span className="text-gold/40">src/data/siteConfig.ts</span>
+            </p>
+          </div>
         </div>
 
-        <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="font-mono text-[9px] tracking-[0.3em] text-cream/40">
+        {/* ── Bottom row ──────────────────────────────────────────── */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-white/[0.04] pt-6">
+          <div className="font-mono text-[9px] tracking-[0.3em] text-cream/35">
             © 2026 GENISYS GRAPHICS. ALL RIGHTS RESERVED.
           </div>
-          <div className="font-mono text-[9px] tracking-[0.25em] text-cream/40">
-            CRAFTED WITH PRECISION · NO SHORTCUTS · NO COMPROMISES
+          <div className="flex items-center gap-4">
+            <div className="font-mono text-[9px] tracking-[0.2em] text-cream/35">
+              {sign}
+            </div>
+            <button
+              onClick={handleContact}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full glass-strong gold-border-glow font-mono text-[10px] tracking-[0.35em] text-gold hover:text-cream transition-colors animate-border-pulse"
+            >
+              CONTACT <span className="text-gold/60">→</span>
+            </button>
           </div>
         </div>
       </div>

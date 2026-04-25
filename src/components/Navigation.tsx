@@ -3,84 +3,66 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { useScramble } from "@/hooks/useScramble";
 import { useMagnetic } from "@/hooks/useMagnetic";
+import { navigatePage, navigateSection, type Route } from "@/lib/router";
+import { SOCIAL } from "@/data/siteConfig";
 
-const LINKS = [
-  { id: "work",    label: "WORK"    },
-  { id: "about",   label: "ABOUT"   },
-  { id: "process", label: "PROCESS" },
+interface Props { route: Route; }
+
+const PAGE_LINKS = [
+  { label: "WORK",     action: () => navigateSection("work"),    page: "home" as const },
+  { label: "SERVICES", action: () => navigatePage("services"),   page: "services" as const },
+  { label: "STUDIO",   action: () => navigatePage("studio"),     page: "studio" as const },
+  { label: "PROCESS",  action: () => navigateSection("process"), page: "home" as const },
 ];
 
-function NavLink({
-  id, label, active, onClick,
-}: { id: string; label: string; active?: boolean; onClick?: () => void }) {
-  const text = useScramble(label, 700);
-  const ref  = useMagnetic<HTMLAnchorElement>(0.3);
-  return (
-    <a
-      ref={ref}
-      href={`#${id}`}
-      onClick={onClick}
-      className={
-        "font-mono text-[11px] tracking-[0.35em] transition-colors px-2 py-1 " +
-        (active ? "text-gold" : "text-cream/80 hover:text-gold")
-      }
-    >
-      {text}
-    </a>
-  );
-}
+const SOCIAL_LABELS: Record<string, string> = {
+  instagram: "IG", twitter: "X", behance: "BE",
+  dribbble: "DR", tiktok: "TK", linkedin: "LI",
+  youtube: "YT", pinterest: "PI",
+};
 
-export default function Navigation() {
-  const brand        = useScramble("GENISYS", 900);
-  const [open, setOpen]   = useState(false);
-  const [active, setActive] = useState<string>("");
-  const menuRef            = useMagnetic<HTMLButtonElement>(0.25);
+export default function Navigation({ route }: Props) {
+  const brand   = useScramble("GENISYS", 900);
+  const [open, setOpen] = useState(false);
+  const menuRef = useMagnetic<HTMLButtonElement>(0.25);
 
-  // Active section tracking via IntersectionObserver
-  useEffect(() => {
-    if (typeof IntersectionObserver === "undefined") return;
-    const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(e => { if (e.isIntersecting) setActive(e.target.id); });
-      },
-      { rootMargin: "-30% 0px -60% 0px", threshold: 0 },
-    );
-    LINKS.forEach(l => {
-      const el = document.getElementById(l.id);
-      if (el) obs.observe(el);
-    });
-    return () => obs.disconnect();
-  }, []);
-
-  // Body scroll lock — uses explicit overflow:hidden + padding compensation
   useEffect(() => {
     if (!open) return;
-    const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
-    document.body.style.overflow        = "hidden";
-    document.body.style.paddingRight    = scrollBarWidth + "px";
-    return () => {
-      document.body.style.overflow     = "";
-      document.body.style.paddingRight = "";
-    };
+    const sw = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.overflow     = "hidden";
+    document.body.style.paddingRight = sw + "px";
+    return () => { document.body.style.overflow = ""; document.body.style.paddingRight = ""; };
   }, [open]);
 
+  // Close overlay on route change
+  useEffect(() => { setOpen(false); }, [route]);
+
   const close = () => setOpen(false);
+
+  const isActive = (link: typeof PAGE_LINKS[0]) => {
+    if (link.page === "services" && route.page === "services") return true;
+    if (link.page === "studio"   && route.page === "studio")   return true;
+    return false;
+  };
 
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-[70] flex items-center justify-between px-4 sm:px-8 pt-4">
-        <a href="#top" className="font-display font-black text-base sm:text-lg gold-text tracking-tight">
+        <button
+          onClick={() => navigateSection("top")}
+          className="font-display font-black text-base sm:text-lg gold-text tracking-tight"
+        >
           {brand}
-        </a>
+        </button>
 
-        {/* Desktop links */}
+        {/* Desktop */}
         <nav className="hidden sm:flex items-center gap-1 glass rounded-full px-3 py-1.5">
-          {LINKS.map(l => (
-            <NavLink key={l.id} {...l} active={active === l.id} />
+          {PAGE_LINKS.map(l => (
+            <DesktopNavLink key={l.label} label={l.label} active={isActive(l)} onClick={l.action} />
           ))}
         </nav>
 
-        {/* Mobile hamburger — isTouch-agnostic: shown on sm:hidden breakpoint */}
+        {/* Mobile hamburger */}
         <button
           ref={menuRef}
           onClick={() => setOpen(true)}
@@ -91,7 +73,7 @@ export default function Navigation() {
         </button>
       </header>
 
-      {/* Mobile full-screen overlay */}
+      {/* Mobile overlay */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -99,7 +81,7 @@ export default function Navigation() {
             animate={{ opacity: 1, clipPath: "circle(150% at 95% 5%)" }}
             exit={{   opacity: 0, clipPath: "circle(0% at 95% 5%)" }}
             transition={{ duration: 0.5, ease: [0.7, 0, 0.3, 1] }}
-            className="fixed inset-0 z-[150] grid place-items-center sm:hidden"
+            className="fixed inset-0 z-[150] flex flex-col justify-between py-16 px-8 sm:hidden"
             style={{ background: "rgba(0,0,0,0.97)", backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)" }}
           >
             <button
@@ -110,34 +92,75 @@ export default function Navigation() {
               <X className="w-5 h-5 text-gold" />
             </button>
 
-            <nav className="flex flex-col items-center gap-10">
-              {LINKS.map((l, i) => (
-                <motion.a
-                  key={l.id}
-                  href={`#${l.id}`}
-                  onClick={close}
+            {/* Page links */}
+            <nav className="flex flex-col gap-8 mt-8">
+              {PAGE_LINKS.map((l, i) => (
+                <motion.button
+                  key={l.label}
+                  onClick={() => { l.action(); close(); }}
                   initial={{ opacity: 0, x: -30 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.45, delay: 0.1 + i * 0.09, ease: [0.7, 0, 0.3, 1] }}
-                  className="font-display font-black text-5xl gold-text tracking-tight"
+                  transition={{ duration: 0.4, delay: 0.1 + i * 0.08, ease: [0.7, 0, 0.3, 1] }}
+                  className="font-display font-black text-5xl gold-text tracking-tight text-left"
                 >
                   {l.label}
-                </motion.a>
+                </motion.button>
               ))}
+            </nav>
 
+            {/* Bottom: CTA + social row */}
+            <div className="space-y-6">
               <motion.button
-                initial={{ opacity: 0, x: -30 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.45, delay: 0.1 + LINKS.length * 0.09, ease: [0.7, 0, 0.3, 1] }}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.5, ease: [0.7, 0, 0.3, 1] }}
                 onClick={() => { close(); window.dispatchEvent(new Event("open-contact")); }}
-                className="mt-2 px-8 py-3 rounded-full glass-strong gold-border-glow font-mono text-xs tracking-[0.3em] text-gold"
+                className="w-full py-3 rounded-full glass-strong gold-border-glow font-mono text-xs tracking-[0.3em] text-gold"
               >
                 START A PROJECT
               </motion.button>
-            </nav>
+
+              {/* Social icons */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className="flex flex-wrap gap-3"
+              >
+                {Object.entries(SOCIAL).map(([platform, url]) => (
+                  <a
+                    key={platform}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-9 h-9 grid place-items-center rounded-lg font-mono text-[10px] font-bold transition-all hover:scale-110"
+                    style={{ background: "hsl(var(--gold)/0.08)", border: "1px solid hsl(var(--gold)/0.2)", color: "hsl(var(--gold)/0.7)" }}
+                  >
+                    {SOCIAL_LABELS[platform] ?? platform.slice(0, 2).toUpperCase()}
+                  </a>
+                ))}
+              </motion.div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
     </>
+  );
+}
+
+function DesktopNavLink({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  const text = useScramble(label, 700);
+  const ref  = useMagnetic<HTMLButtonElement>(0.3);
+  return (
+    <button
+      ref={ref}
+      onClick={onClick}
+      className={
+        "font-mono text-[11px] tracking-[0.35em] transition-colors px-2 py-1 " +
+        (active ? "text-gold" : "text-cream/80 hover:text-gold")
+      }
+    >
+      {text}
+    </button>
   );
 }

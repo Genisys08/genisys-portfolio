@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#000000" />
+    <title>Genisys Graphics — Operatic Brand &amp; Identity Design</title>
+    <meta name="description" content="Genisys Graphics is a high-end design studio crafting operatic brand identities, flyers, and logo systems." />
+
+    <meta property="og:type"        content="website" />
+    <meta property="og:title"       content="Genisys Graphics — Operatic Brand &amp; Identity Design" />
+    <meta property="og:description" content="High-end design studio. Pitch-black aesthetics. Metallic gold execution." />
+    <meta property="og:image"       content="https://genisys-portfolio.vercel.app/og-preview.jpg" />
+    <meta property="og:url"         content="https://genisys-portfolio.vercel.app/" />
+
+    <meta name="twitter:card"  content="summary_large_image" />
+    <meta name="twitter:image" content="https://genisys-portfolio.vercel.app/og-preview.jpg" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800;900&family=Inter:wght@400;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
