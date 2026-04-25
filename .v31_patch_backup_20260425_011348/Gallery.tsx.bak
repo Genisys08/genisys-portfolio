@@ -6,7 +6,7 @@ import Lightbox      from "./Lightbox";
 import { useScramble } from "@/hooks/useScramble";
 import { useMagnetic } from "@/hooks/useMagnetic";
 import { pulseLetterbox } from "./Letterbox";
-import { haptic }         from "@/lib/haptics";
+import { haptic }        from "@/lib/haptics";
 
 const TABS: ("All" | Category)[] = ["All", "Flyers", "Logos", "Brand Identity"];
 const PAGE_SIZE = 12;
@@ -44,8 +44,8 @@ export default function Gallery() {
     [filter],
   );
 
-  const visible   = filtered.slice(0, page * PAGE_SIZE);
-  const hasMore   = visible.length < filtered.length;
+  const visible = filtered.slice(0, page * PAGE_SIZE);
+  const hasMore = visible.length < filtered.length;
   const remaining = filtered.length - visible.length;
 
   const changeFilter = (f: "All" | Category) => {
@@ -67,10 +67,7 @@ export default function Gallery() {
         <div className="flex items-end justify-between gap-4 mb-8 flex-wrap">
           <div>
             <div className="font-mono text-[10px] tracking-[0.4em] text-gold/80">VISUAL PORTFOLIO</div>
-            {/* AESTHETIC-4: heading-glow-reveal added for gold pulse on enter */}
-            <h2 className="mt-2 font-display font-black text-4xl sm:text-6xl gold-text chromatic heading-glow-reveal">
-              {heading}
-            </h2>
+            <h2 className="mt-2 font-display font-black text-4xl sm:text-6xl gold-text chromatic">{heading}</h2>
           </div>
           <div className="flex flex-wrap gap-2">
             {TABS.map(t => (
@@ -81,13 +78,8 @@ export default function Gallery() {
 
         <div className="columns-1 sm:columns-2 lg:columns-3 gap-5">
           <AnimatePresence mode="popLayout">
-            {visible.map((item, i) => (
-              <PortfolioCard
-                key={item.id}
-                item={item}
-                onOpen={handleOpen}
-                entranceDelay={(i % PAGE_SIZE) * 0.055}
-              />
+            {visible.map(item => (
+              <PortfolioCard key={item.id} item={item} onOpen={handleOpen} />
             ))}
           </AnimatePresence>
         </div>

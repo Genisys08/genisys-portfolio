@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Pitch-black operatic palette — V2.5: brightened foreground for readability */
+    --background: 0 0% 2%;
+    --foreground: 44 60% 88%;          /* light cream-gold, high contrast */
+
+    --card: 0 0% 4%;
+    --card-foreground: 44 60% 90%;
+
+    --popover: 0 0% 3%;
+    --popover-foreground: 44 60% 90%;
+
+    --primary: 44 70% 52%;
+    --primary-foreground: 0 0% 4%;
+
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 44 60% 90%;
+
+    --muted: 0 0% 8%;
+    --muted-foreground: 44 30% 78%;
+
+    --accent: 44 70% 52%;
+    --accent-foreground: 0 0% 4%;
+
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 44 30% 18%;
+    --input: 0 0% 12%;
+    --ring: 44 70% 52%;
+
+    --radius: 0.75rem;
+
+    /* Brand palette — V2.5: ONLY two real accents (gold + black) for fluid */
+    --gold: 44 72% 54%;
+    --gold-soft: 44 60% 78%;            /* brighter for body text */
+    --gold-deep: 40 65% 32%;
+    --cream: 44 55% 90%;                /* high-contrast cream */
+    --void: 0 0% 4%;                    /* pitch black */
+  }
+  html, body, #root { background: hsl(0 0% 0%); color: hsl(var(--foreground)); }
+  html { scroll-behavior: auto; -webkit-font-smoothing: antialiased; }
+  body {
+    font-family: Inter, system-ui, sans-serif;
+    overflow-x: hidden;
+    /* V2.5: explicit no filter on body — guarantees text never inherits a blur */
+    filter: none !important;
+  }
+  * { @apply border-border; }
+  ::selection { background: hsl(var(--gold) / 0.4); color: hsl(var(--cream)); }
+
+  /* V2.5: NEVER blur readable text. Anything with these data attrs/tags stays sharp. */
+  p, h1, h2, h3, h4, h5, h6, span, a, button, label, input, textarea, select, li, div[data-text] {
+    filter: none !important;
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: linear-gradient(135deg, hsl(0 0% 100% / 0.06), hsl(0 0% 100% / 0.02));
+    backdrop-filter: blur(22px) saturate(140%);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+    border: 1px solid hsl(44 60% 60% / 0.18);
+    box-shadow: 0 10px 40px -10px hsl(0 0% 0% / 0.7), inset 0 1px 0 hsl(0 0% 100% / 0.08);
+  }
+  .glass-strong {
+    background: linear-gradient(135deg, hsl(0 0% 100% / 0.10), hsl(0 0% 100% / 0.03));
+    backdrop-filter: blur(36px) saturate(160%);
+    -webkit-backdrop-filter: blur(36px) saturate(160%);
+    border: 1px solid hsl(44 70% 60% / 0.32);
+    box-shadow: 0 20px 60px -15px hsl(0 0% 0% / 0.85), inset 0 1px 0 hsl(0 0% 100% / 0.12), inset 0 0 30px hsl(44 70% 50% / 0.05);
+  }
+  .specular::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: linear-gradient(115deg, transparent 30%, hsl(0 0% 100% / 0.18) 48%, transparent 56%);
+    mix-blend-mode: overlay; opacity: 0.7;
+  }
+  .grain::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.18;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    mix-blend-mode: overlay; border-radius: inherit;
+  }
+  .chromatic { text-shadow: 0 0 1px hsl(44 70% 50% / 0.3); }
+  .gold-text {
+    background: linear-gradient(160deg, #FFE9A0 0%, #E8C76B 28%, #D4AF37 55%, #A8801F 82%, #6B4F12 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .gold-border-glow { box-shadow: 0 0 0 1px hsl(var(--gold) / 0.5), 0 0 24px hsl(var(--gold) / 0.45), inset 0 0 12px hsl(var(--gold) / 0.18); }
+  .letterbox-bar { background: #000; position: fixed; left: 0; right: 0; z-index: 80; pointer-events: none; }
+
+  /* V2.5: focus-dim is now opacity-only — NO blur filter on body text. */
+  .focus-dim [data-focusable]:not([data-focused="true"]) { opacity: 0.55; transition: opacity .35s ease; }
+  .focus-dim [data-focused="true"] { opacity: 1; transition: opacity .35s ease; z-index: 5; position: relative; }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+
+  /* V2.5: Audio equalizer bars */
+  @keyframes eq-bar {
+    0%, 100% { transform: scaleY(0.35); }
+    50%      { transform: scaleY(1); }
+  }
+  .eq-bar { transform-origin: bottom center; animation: eq-bar 0.9s ease-in-out infinite; }
+
+  /* V2.5: Border pulse fallback (preserved from v2) */
+  @keyframes border-pulse {
+    0%, 100% { box-shadow: 0 0 0 1px hsl(var(--gold) / 0.5), 0 0 18px hsl(var(--gold) / 0.35); }
+    50%      { box-shadow: 0 0 0 1px hsl(var(--gold) / 0.8), 0 0 32px hsl(var(--gold) / 0.6); }
+  }
+  .animate-border-pulse { animation: border-pulse 2.4s ease-in-out infinite; }
+
+  @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+  .animate-shimmer { animation: shimmer 1.6s linear infinite; }
+
+  @keyframes mesh-shift { 0%, 100% { transform: translate(0,0) scale(1); } 50% { transform: translate(2%, -1%) scale(1.05); } }
+  .animate-mesh-shift { animation: mesh-shift 18s ease-in-out infinite; }
+}

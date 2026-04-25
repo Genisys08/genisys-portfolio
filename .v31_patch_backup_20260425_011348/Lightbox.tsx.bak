@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronLeft, ChevronRight, Share2, Download } from "lucide-react";
+import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import type { PortfolioItem } from "@/data/portfolioData";
-import { useDominantColor } from "@/hooks/useDominantColor";
+import { useDominantColor }   from "@/hooks/useDominantColor";
 
 interface Props {
   items:      PortfolioItem[];
@@ -12,10 +12,9 @@ interface Props {
 }
 
 export default function Lightbox({ items, index, onClose, onNavigate }: Props) {
-  const item        = index !== null ? items[index] : null;
-  const color       = useDominantColor(item?.imagePath);
-  const touchStartX = useRef<number | null>(null);
-  const canShare    = typeof navigator !== "undefined" && "share" in navigator;
+  const item          = index !== null ? items[index] : null;
+  const color         = useDominantColor(item?.imagePath);
+  const touchStartX   = useRef<number | null>(null);
 
   // ── Body scroll lock ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -25,7 +24,7 @@ export default function Lightbox({ items, index, onClose, onNavigate }: Props) {
     return () => { document.body.style.overflow = prev || "unset"; };
   }, [index]);
 
-  // ── Keyboard ─────────────────────────────────────────────────────────────
+  // ── Keyboard navigation ──────────────────────────────────────────────────
   useEffect(() => {
     if (index === null) return;
     const onKey = (e: KeyboardEvent) => {
@@ -35,41 +34,20 @@ export default function Lightbox({ items, index, onClose, onNavigate }: Props) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
 
-  const goPrev = () => { if (index !== null && index > 0)                  onNavigate(index - 1); };
-  const goNext = () => { if (index !== null && index < items.length - 1)   onNavigate(index + 1); };
+  const goPrev = () => { if (index !== null && index > 0)                    onNavigate(index - 1); };
+  const goNext = () => { if (index !== null && index < items.length - 1)     onNavigate(index + 1); };
 
   // ── Touch swipe ──────────────────────────────────────────────────────────
-  const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
-  const onTouchEnd   = (e: React.TouchEvent) => {
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX.current === null) return;
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     if (Math.abs(dx) > 50) { dx < 0 ? goNext() : goPrev(); }
     touchStartX.current = null;
-  };
-
-  // ── UPGRADE-2: Share / Download ──────────────────────────────────────────
-  const handleShare = async () => {
-    if (!item) return;
-    if (canShare) {
-      try {
-        await navigator.share({
-          title: item.title,
-          text:  item.description ?? item.category,
-          url:   item.imagePath,
-        });
-      } catch { /* user cancelled or API error */ }
-    } else {
-      // Fallback: programmatic download
-      const a = document.createElement("a");
-      a.href     = item.imagePath;
-      a.download = `${item.title.replace(/\s+/g, "-").toLowerCase()}.jpg`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
   };
 
   const hasPrev = index !== null && index > 0;
@@ -82,19 +60,18 @@ export default function Lightbox({ items, index, onClose, onNavigate }: Props) {
           key={item.id}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{   opacity: 0 }}
+          exit={{ opacity: 0 }}
           transition={{ duration: 0.35 }}
           className="fixed inset-0 z-[120] grid place-items-center p-4 sm:p-10"
           style={{
-            background:     `radial-gradient(80% 60% at 50% 50%, ${color}33, #000 80%)`,
-            backdropFilter: "blur(14px)",
-            WebkitBackdropFilter: "blur(14px)",
+            background:      `radial-gradient(80% 60% at 50% 50%, ${color}33, #000 80%)`,
+            backdropFilter:  "blur(14px)",
           }}
           onClick={onClose}
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
         >
-          {/* ── Close ─────────────────────────────────────────────────── */}
+          {/* ── Close ───────────────────────────────────────────────── */}
           <button
             aria-label="Close lightbox"
             onClick={onClose}
@@ -104,21 +81,7 @@ export default function Lightbox({ items, index, onClose, onNavigate }: Props) {
             <X className="w-5 h-5 text-gold" />
           </button>
 
-          {/* ── Share / Download ──────────────────────────────────────── */}
-          <button
-            aria-label={canShare ? "Share image" : "Download image"}
-            onClick={e => { e.stopPropagation(); handleShare(); }}
-            style={{ zIndex: 9999 }}
-            className="absolute top-5 right-20 sm:top-7 sm:right-24 grid place-items-center w-11 h-11 rounded-full glass-strong gold-border-glow"
-            title={canShare ? "Share" : "Download"}
-          >
-            {canShare
-              ? <Share2   className="w-4 h-4 text-gold" />
-              : <Download className="w-4 h-4 text-gold" />
-            }
-          </button>
-
-          {/* ── Prev ──────────────────────────────────────────────────── */}
+          {/* ── Prev ────────────────────────────────────────────────── */}
           {hasPrev && (
             <button
               aria-label="Previous image"
@@ -130,7 +93,7 @@ export default function Lightbox({ items, index, onClose, onNavigate }: Props) {
             </button>
           )}
 
-          {/* ── Next ──────────────────────────────────────────────────── */}
+          {/* ── Next ────────────────────────────────────────────────── */}
           {hasNext && (
             <button
               aria-label="Next image"
@@ -142,7 +105,7 @@ export default function Lightbox({ items, index, onClose, onNavigate }: Props) {
             </button>
           )}
 
-          {/* ── Counter ───────────────────────────────────────────────── */}
+          {/* ── Counter ─────────────────────────────────────────────── */}
           {index !== null && (
             <div
               className="absolute bottom-6 left-1/2 -translate-x-1/2 font-mono text-[10px] tracking-[0.3em]"
@@ -152,7 +115,7 @@ export default function Lightbox({ items, index, onClose, onNavigate }: Props) {
             </div>
           )}
 
-          {/* ── Card ──────────────────────────────────────────────────── */}
+          {/* ── Card — key includes id so it re-animates on navigation ─ */}
           <motion.div
             key={item.id + "-card"}
             initial={{ scale: 0.96, y: 20 }}
@@ -175,7 +138,9 @@ export default function Lightbox({ items, index, onClose, onNavigate }: Props) {
                 {item.title}
               </h3>
               {item.description && (
-                <p className="mt-3 text-cream/70 text-sm leading-relaxed">{item.description}</p>
+                <p className="mt-3 text-cream/70 text-sm leading-relaxed">
+                  {item.description}
+                </p>
               )}
             </div>
           </motion.div>
