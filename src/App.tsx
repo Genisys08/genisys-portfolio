@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/react";
 import { useEffect, useState }   from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import ErrorBoundary              from "@/components/ErrorBoundary";
@@ -111,6 +112,7 @@ export default function App() {
           <ContactModal open={contactOpen} onClose={() => setOpen(false)} />
         </GyroscopeProvider>
       </ToastProvider>
+      <Analytics />
     </ErrorBoundary>
   );
 }
