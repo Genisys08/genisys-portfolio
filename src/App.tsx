@@ -7,7 +7,7 @@ import EmberParticles             from "@/components/EmberParticles";
 import MagneticCursor             from "@/components/MagneticCursor";
 import GoldDustTrail              from "@/components/GoldDustTrail";
 import Preloader                  from "@/components/Preloader";
-import VibeToggle                 from "@/components/VibeToggle";
+import MusicPlayer               from "@/components/MusicPlayer";
 import Navigation                 from "@/components/Navigation";
 import ContactModal               from "@/components/ContactModal";
 import Letterbox                  from "@/components/Letterbox";
@@ -85,7 +85,7 @@ export default function App() {
           <CookieBanner show={loaded} onVisibleChange={setCookieShowing} />
           <BackToTop raised={cookieShowing} />
           {!loaded && <Preloader onDone={() => setLoaded(true)} />}
-          <VibeToggle />
+          <MusicPlayer />
 
           <div className="relative z-10">
             <Navigation route={route} />
