@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence }   from "framer-motion";
 import { portfolio, type Category, type PortfolioItem } from "@/data/portfolioData";
 import PortfolioCard  from "./PortfolioCard";
 import Lightbox       from "./Lightbox";
@@ -16,10 +16,14 @@ function Tab({ label, active, onClick }: { label: string; active: boolean; onCli
   const ref  = useMagnetic<HTMLButtonElement>(0.3);
   return (
     <button
-      ref={ref} type="button" onClick={onClick}
+      ref={ref}
+      type="button"
+      onClick={onClick}
       className={
         "flex-none px-4 py-2 rounded-full font-mono text-[10px] sm:text-[11px] tracking-[0.3em] transition-colors " +
-        (active ? "bg-gold text-black gold-border-glow" : "text-cream/85 hover:text-gold border border-white/10")
+        (active
+          ? "bg-gold text-black gold-border-glow"
+          : "text-cream/85 hover:text-gold border border-white/10")
       }
     >
       {text}
@@ -43,7 +47,10 @@ export default function Gallery() {
 
   const changeFilter = (f: "All" | Category) => {
     if (f === filter) return;
-    haptic(8); pulseLetterbox(); setFilter(f); setPage(1);
+    haptic(8);
+    pulseLetterbox();
+    setFilter(f);
+    setPage(1);
   };
 
   const handleOpen = (item: PortfolioItem) => {
@@ -60,6 +67,7 @@ export default function Gallery() {
               {heading}
             </h2>
           </div>
+          {/* FIX-4: overflow-x-auto + flex-none tabs = always one row */}
           <div className="flex overflow-x-auto gap-2 no-scrollbar pb-1 max-w-full">
             {TABS.map(t => (
               <Tab key={t} label={t} active={filter === t} onClick={() => changeFilter(t)} />
@@ -67,59 +75,30 @@ export default function Gallery() {
           </div>
         </div>
 
-        {/* FIX-6: Empty state when filter returns no results */}
-        {filtered.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, ease: [0.7, 0, 0.3, 1] }}
-            className="flex flex-col items-center justify-center py-24 gap-5"
-          >
-            <div
-              className="w-16 h-16 rounded-2xl grid place-items-center"
-              style={{ background: "hsl(var(--gold)/0.07)", border: "1px solid hsl(var(--gold)/0.2)" }}
-            >
-              <span className="font-display font-black text-2xl gold-text">?</span>
-            </div>
-            <div className="font-mono text-[10px] tracking-[0.4em] text-cream/40 text-center">
-              NO WORK FOUND IN THIS CATEGORY
-            </div>
+        <div className="columns-1 sm:columns-2 lg:columns-3 gap-5">
+          <AnimatePresence mode="popLayout">
+            {visible.map((item, i) => (
+              <PortfolioCard
+                key={item.id}
+                item={item}
+                onOpen={handleOpen}
+                entranceDelay={(i % PAGE_SIZE) * 0.055}
+                hasCaseStudy={!!item.caseStudy}
+              />
+            ))}
+          </AnimatePresence>
+        </div>
+
+        {hasMore && (
+          <div className="mt-12 flex justify-center">
             <button
               type="button"
-              onClick={() => changeFilter("All")}
-              className="px-6 py-2.5 rounded-full glass gold-border-glow font-mono text-[10px] tracking-[0.3em] text-gold hover:text-cream transition-colors"
+              onClick={() => setPage(p => p + 1)}
+              className="px-8 py-3 rounded-full glass-strong gold-border-glow font-mono text-xs tracking-[0.3em] text-gold hover:text-cream transition-colors"
             >
-              CLEAR FILTER
+              LOAD MORE — {remaining} REMAINING
             </button>
-          </motion.div>
-        ) : (
-          <>
-            <div className="columns-1 sm:columns-2 lg:columns-3 gap-5">
-              <AnimatePresence mode="popLayout">
-                {visible.map((item, i) => (
-                  <PortfolioCard
-                    key={item.id}
-                    item={item}
-                    onOpen={handleOpen}
-                    entranceDelay={(i % PAGE_SIZE) * 0.055}
-                    hasCaseStudy={!!item.caseStudy}
-                  />
-                ))}
-              </AnimatePresence>
-            </div>
-
-            {hasMore && (
-              <div className="mt-12 flex justify-center">
-                <button
-                  type="button"
-                  onClick={() => setPage(p => p + 1)}
-                  className="px-8 py-3 rounded-full glass-strong gold-border-glow font-mono text-xs tracking-[0.3em] text-gold hover:text-cream transition-colors"
-                >
-                  LOAD MORE — {remaining} REMAINING
-                </button>
-              </div>
-            )}
-          </>
+          </div>
         )}
       </div>
 

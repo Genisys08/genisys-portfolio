@@ -2,7 +2,6 @@ import { useScramble }    from "@/hooks/useScramble";
 import { haptic }         from "@/lib/haptics";
 import { SOCIAL, STUDIO } from "@/data/siteConfig";
 import { navigatePage, navigateSection } from "@/lib/router";
-import SocialIcon from "@/components/SocialIcon";
 
 const SOCIAL_LABELS: Record<string, string> = {
   instagram: "Instagram", twitter: "X / Twitter", behance: "Behance",
@@ -34,15 +33,12 @@ export default function Footer({ onContact }: Props) {
               OPERATIC BRAND &amp; IDENTITY DESIGN<br />
               {STUDIO.location.toUpperCase()}
             </div>
-{/* Email address hidden until STUDIO.email is updated in siteConfig.ts */}
-            {STUDIO.email && !STUDIO.email.includes("genisysgraphics.com") && (
-              <a
-                href={`mailto:${STUDIO.email}`}
-                className="font-mono text-[10px] tracking-[0.2em] text-gold/65 hover:text-gold transition-colors"
-              >
-                {STUDIO.email}
-              </a>
-            )}
+            <a
+              href={`mailto:${STUDIO.email}`}
+              className="font-mono text-[10px] tracking-[0.2em] text-gold/65 hover:text-gold transition-colors"
+            >
+              {STUDIO.email}
+            </a>
           </div>
 
           {/* Sitemap */}
@@ -76,10 +72,10 @@ export default function Footer({ onContact }: Props) {
                 <a
                   key={platform} href={url} target="_blank" rel="noopener noreferrer"
                   title={SOCIAL_LABELS[platform]}
-                  className="aspect-square grid place-items-center rounded-xl transition-all duration-200 hover:scale-110"
+                  className="aspect-square grid place-items-center rounded-xl font-mono text-[10px] font-bold transition-all duration-200 hover:scale-110"
                   style={{ background: "hsl(var(--gold)/0.07)", border: "1px solid hsl(var(--gold)/0.18)", color: "hsl(var(--gold)/0.65)" }}
                 >
-                  <SocialIcon platform={platform} size={16} />
+                  {SOCIAL_SHORT[platform]}
                 </a>
               ))}
             </div>

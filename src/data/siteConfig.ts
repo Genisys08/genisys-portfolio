@@ -52,13 +52,13 @@ export const PRICING = [
   {
     id:          "ignition",
     tier:        "IGNITION",
-    price:       "$350",                       // ← EDIT PRICE
+    price:       "$50",                       // ← EDITED PRICE
     period:      "one-time",
     tagline:     "The spark.",
     description: "For founders who need a precise mark built for dominance. Rapid, unforgettable, final.",
     features: [
       "Primary logo + 2 alternates",
-      "Full vector source files (AI, SVG, PDF)",
+      "Ultra High-Res Master Assets (Upscaled PNG, Transparent WebP, PDF)",
       "Brand colour palette (Hex, RGB, CMYK)",
       "Typography selection + pairing guide",
       "5–7 day turnaround",
@@ -75,7 +75,7 @@ export const PRICING = [
   {
     id:          "architect",
     tier:        "ARCHITECT",
-    price:       "$750",                       // ← EDIT PRICE
+    price:       "$150",                       // ← EDITED PRICE
     period:      "one-time",
     tagline:     "The full structure.",
     description: "A complete identity system. Every mark, every colour, every type rule locked into a brand bible.",
@@ -99,7 +99,7 @@ export const PRICING = [
   {
     id:          "sovereign",
     tier:        "SOVEREIGN",
-    price:       "$1,500+",                    // ← EDIT PRICE (custom quote)
+    price:       "$350+",                    // ← EDITED PRICE (custom quote)
     period:      "per project",
     tagline:     "Total visual dominion.",
     description: "Full visual direction engagement. We embed into your brand and build everything from the ground up.",
@@ -139,7 +139,7 @@ export const FAQ = [
   },
   {
     q: "What files do I receive?",
-    a: "All deliverables come in print-ready and screen-ready formats: AI, EPS, SVG, PDF, PNG (transparent), and WEBP. Motion files ship as MP4 and WEBM.",
+    a: "All deliverables come in print-ready and screen-ready formats optimized for maximum fidelity: Upscaled PNG (transparent), High-Res WebP, and PDF master files. Motion files ship as MP4 and WEBM.",
   },
   {
     q: "Can I pay in instalments?",

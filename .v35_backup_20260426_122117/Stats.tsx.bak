@@ -3,11 +3,10 @@ import { motion } from "framer-motion";
 
 interface StatItem { value: number; suffix: string; label: string; }
 
-// FIX-10: Numbers synced with About.tsx to remove brand inconsistency
 const STATS: StatItem[] = [
-  { value: 120, suffix: "+", label: "Projects Delivered" },
+  { value: 51,  suffix: "+", label: "Projects Delivered" },
   { value: 100, suffix: "%", label: "Client Retention"   },
-  { value: 32,  suffix: "",  label: "Countries Reached"  },
+  { value: 3,   suffix: "",  label: "Countries Reached"  },
   { value: 5,   suffix: "★", label: "Average Rating"     },
 ];
 
@@ -22,16 +21,19 @@ function Counter({ value, suffix }: { value: number; suffix: string }) {
       if (started.current) return;
       started.current = true;
       const start = performance.now();
-      const tick  = (now: number) => {
-        const t     = Math.min((now - start) / DURATION, 1);
-        const eased = 1 - Math.pow(1 - t, 3);
+      const tick = (now: number) => {
+        const t       = Math.min((now - start) / DURATION, 1);
+        const eased   = 1 - Math.pow(1 - t, 3); // ease-out cubic
         setCount(Math.floor(eased * value));
         if (t < 1) requestAnimationFrame(tick);
         else setCount(value);
       };
       requestAnimationFrame(tick);
     };
+
+    // Fallback: fire after 1.5 s regardless (Termux WebView IO can be unreliable)
     const fallback = setTimeout(trigger, 1500);
+
     let obs: IntersectionObserver | null = null;
     if (typeof IntersectionObserver !== "undefined" && elRef.current) {
       obs = new IntersectionObserver(
@@ -40,6 +42,7 @@ function Counter({ value, suffix }: { value: number; suffix: string }) {
       );
       obs.observe(elRef.current);
     }
+
     return () => { clearTimeout(fallback); obs?.disconnect(); };
   }, [value]);
 

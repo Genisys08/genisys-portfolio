@@ -44,15 +44,8 @@ export default function Lightbox({ items, index, onClose, onNavigate }: Props) {
   }, [index]);
 
   useEffect(() => {
-    // BUG-1 FIX: We pushed { lightbox:true } onto history when the lightbox
-    // opened.  history.back() restores the PREVIOUS state (no lightbox key),
-    // so we must fire onClose() whenever we detect we navigated away from the
-    // lightbox state — i.e. historyPushed is true and we got a popstate.
-    const handler = (_e: PopStateEvent) => {
-      if (historyPushed.current) {
-        historyPushed.current = false;
-        onClose();
-      }
+    const handler = (e: PopStateEvent) => {
+      if ((e.state as { lightbox?: boolean } | null)?.lightbox) onClose();
     };
     window.addEventListener("popstate", handler);
     return () => window.removeEventListener("popstate", handler);

@@ -5,16 +5,15 @@ import { useScramble } from "@/hooks/useScramble";
 import { useMagnetic } from "@/hooks/useMagnetic";
 import { navigatePage, navigateSection, type Route } from "@/lib/router";
 import { SOCIAL } from "@/data/siteConfig";
-import SocialIcon from "@/components/SocialIcon";
 
 interface Props { route: Route; }
 
 const PAGE_LINKS = [
-  { label: "WORK",     action: () => navigateSection("work"),    page: null,         section: "work"    },
-  { label: "SERVICES", action: () => navigatePage("services"),   page: "services",   section: null      },
-  { label: "STUDIO",   action: () => navigatePage("studio"),     page: "studio",     section: null      },
-  { label: "PROCESS",  action: () => navigateSection("process"), page: null,         section: "process" },
-] as const;
+  { label: "WORK",     action: () => navigateSection("work"),    page: "home" as const },
+  { label: "SERVICES", action: () => navigatePage("services"),   page: "services" as const },
+  { label: "STUDIO",   action: () => navigatePage("studio"),     page: "studio" as const },
+  { label: "PROCESS",  action: () => navigateSection("process"), page: "home" as const },
+];
 
 const SOCIAL_LABELS: Record<string, string> = {
   instagram: "IG", twitter: "X", behance: "BE",
@@ -24,27 +23,8 @@ const SOCIAL_LABELS: Record<string, string> = {
 
 export default function Navigation({ route }: Props) {
   const brand   = useScramble("GENISYS", 900);
-  const [open,          setOpen]          = useState(false);
-  const [activeSection, setActiveSection] = useState<string>("");
+  const [open, setOpen] = useState(false);
   const menuRef = useMagnetic<HTMLButtonElement>(0.25);
-
-  // FIX-3: Scroll-spy via IntersectionObserver — only on home page
-  useEffect(() => {
-    if (route.page !== "home") { setActiveSection(""); return; }
-    if (typeof IntersectionObserver === "undefined") return;
-    const SECTION_IDS = ["work", "about", "process", "faq"];
-    const obs = new IntersectionObserver(
-      entries => {
-        entries.forEach(e => { if (e.isIntersecting) setActiveSection(e.target.id); });
-      },
-      { rootMargin: "-25% 0px -65% 0px", threshold: 0 },
-    );
-    SECTION_IDS.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) obs.observe(el);
-    });
-    return () => obs.disconnect();
-  }, [route.page]);
 
   useEffect(() => {
     if (!open) return;
@@ -54,15 +34,14 @@ export default function Navigation({ route }: Props) {
     return () => { document.body.style.overflow = ""; document.body.style.paddingRight = ""; };
   }, [open]);
 
+  // Close overlay on route change
   useEffect(() => { setOpen(false); }, [route]);
 
   const close = () => setOpen(false);
 
-  const isActive = (link: typeof PAGE_LINKS[number]) => {
-    // Match by route page
-    if (link.page && route.page === link.page) return true;
-    // Match by scroll-spy section (only on home)
-    if (link.section && route.page === "home" && activeSection === link.section) return true;
+  const isActive = (link: typeof PAGE_LINKS[0]) => {
+    if (link.page === "services" && route.page === "services") return true;
+    if (link.page === "studio"   && route.page === "studio")   return true;
     return false;
   };
 
@@ -76,15 +55,10 @@ export default function Navigation({ route }: Props) {
           {brand}
         </button>
 
-        {/* Desktop nav */}
+        {/* Desktop */}
         <nav className="hidden sm:flex items-center gap-1 glass rounded-full px-3 py-1.5">
           {PAGE_LINKS.map(l => (
-            <DesktopNavLink
-              key={l.label}
-              label={l.label}
-              active={isActive(l)}
-              onClick={l.action}
-            />
+            <DesktopNavLink key={l.label} label={l.label} active={isActive(l)} onClick={l.action} />
           ))}
         </nav>
 
@@ -113,12 +87,12 @@ export default function Navigation({ route }: Props) {
             <button
               onClick={close}
               aria-label="Close navigation"
-              style={{ position: "fixed", top: "max(calc(env(safe-area-inset-top,0px) + 12px), 16px)", right: "16px" }}
-              className="grid place-items-center w-11 h-11 rounded-full glass-strong gold-border-glow z-10"
+              className="absolute top-5 right-5 grid place-items-center w-11 h-11 rounded-full glass-strong gold-border-glow"
             >
               <X className="w-5 h-5 text-gold" />
             </button>
 
+            {/* Page links */}
             <nav className="flex flex-col gap-8 mt-8">
               {PAGE_LINKS.map((l, i) => (
                 <motion.button
@@ -127,16 +101,14 @@ export default function Navigation({ route }: Props) {
                   initial={{ opacity: 0, x: -30 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.4, delay: 0.1 + i * 0.08, ease: [0.7, 0, 0.3, 1] }}
-                  className={
-                    "font-display font-black text-5xl tracking-tight text-left transition-colors " +
-                    (isActive(l) ? "gold-text" : "text-cream/80")
-                  }
+                  className="font-display font-black text-5xl gold-text tracking-tight text-left"
                 >
                   {l.label}
                 </motion.button>
               ))}
             </nav>
 
+            {/* Bottom: CTA + social row */}
             <div className="space-y-6">
               <motion.button
                 initial={{ opacity: 0, y: 16 }}
@@ -147,18 +119,24 @@ export default function Navigation({ route }: Props) {
               >
                 START A PROJECT
               </motion.button>
+
+              {/* Social icons */}
               <motion.div
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}
                 className="flex flex-wrap gap-3"
               >
                 {Object.entries(SOCIAL).map(([platform, url]) => (
                   <a
-                    key={platform} href={url} target="_blank" rel="noopener noreferrer"
+                    key={platform}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="w-9 h-9 grid place-items-center rounded-lg font-mono text-[10px] font-bold transition-all hover:scale-110"
                     style={{ background: "hsl(var(--gold)/0.08)", border: "1px solid hsl(var(--gold)/0.2)", color: "hsl(var(--gold)/0.7)" }}
                   >
-                    <SocialIcon platform={platform} size={15} />
+                    {SOCIAL_LABELS[platform] ?? platform.slice(0, 2).toUpperCase()}
                   </a>
                 ))}
               </motion.div>
@@ -175,7 +153,8 @@ function DesktopNavLink({ label, active, onClick }: { label: string; active: boo
   const ref  = useMagnetic<HTMLButtonElement>(0.3);
   return (
     <button
-      ref={ref} onClick={onClick}
+      ref={ref}
+      onClick={onClick}
       className={
         "font-mono text-[11px] tracking-[0.35em] transition-colors px-2 py-1 " +
         (active ? "text-gold" : "text-cream/80 hover:text-gold")

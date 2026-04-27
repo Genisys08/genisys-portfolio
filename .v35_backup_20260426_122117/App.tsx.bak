@@ -1,5 +1,4 @@
 import { useEffect, useState }   from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import ErrorBoundary              from "@/components/ErrorBoundary";
 import LiquidCanvas               from "@/components/LiquidCanvas";
 import EmberParticles             from "@/components/EmberParticles";
@@ -35,7 +34,7 @@ const TIER = getDeviceTier();
 export default function App() {
   const [loaded,        setLoaded]        = useState(false);
   const [contactOpen,   setOpen]          = useState(false);
-  const [cookieShowing, setCookieShowing] = useState(false);
+  const [cookieShowing, setCookieShowing] = useState(false); // FIX-9
 
   const reduced = useReducedMotion();
   const route   = useRouter();
@@ -51,11 +50,6 @@ export default function App() {
   const showEmbers   = !reduced && TIER !== "low";
   const showGoldDust = !reduced && TIER === "high";
   const showAurora   = !reduced && TIER !== "low";
-
-  // Unique key per page — drives AnimatePresence transition
-  const pageKey = route.page === "case-study"
-    ? `case-study-${route.id}`
-    : route.page;
 
   const renderPage = () => {
     switch (route.page) {
@@ -81,33 +75,15 @@ export default function App() {
           <Letterbox />
           <ScrollVignette />
           <CommandPalette />
+          {/* FIX-3: show={loaded}   FIX-9: onVisibleChange */}
           <CookieBanner show={loaded} onVisibleChange={setCookieShowing} />
           <BackToTop raised={cookieShowing} />
           {!loaded && <Preloader onDone={() => setLoaded(true)} />}
           <VibeToggle />
-
           <div className="relative z-10">
             <Navigation route={route} />
-            <main>
-              {/*
-               * FIX-7: AnimatePresence mode="wait" fades the current page out
-               * before fading the new one in. No more hard cuts between pages.
-               * reduced-motion: instant transition (duration 0) via CSS class.
-               */}
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={pageKey}
-                  initial={{ opacity: 0, y: reduced ? 0 : 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{   opacity: 0, y: reduced ? 0 : -8 }}
-                  transition={{ duration: reduced ? 0 : 0.35, ease: [0.7, 0, 0.3, 1] }}
-                >
-                  {renderPage()}
-                </motion.div>
-              </AnimatePresence>
-            </main>
+            <main>{renderPage()}</main>
           </div>
-
           <ContactModal open={contactOpen} onClose={() => setOpen(false)} />
         </GyroscopeProvider>
       </ToastProvider>

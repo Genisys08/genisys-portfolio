@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { useScramble } from "@/hooks/useScramble";
 import { useMagnetic } from "@/hooks/useMagnetic";
 import { SOCIAL, STUDIO } from "@/data/siteConfig";
+import SocialIcon from "@/components/SocialIcon";
 import { navigateSection } from "@/lib/router";
 import Footer from "@/components/Footer";
 
@@ -84,7 +85,7 @@ export default function StudioPage({ onContact }: Props) {
                       className="w-8 h-8 grid place-items-center rounded-lg font-mono text-[9px] transition-all duration-200 hover:scale-110"
                       style={{ background: "hsl(var(--gold)/0.08)", border: "1px solid hsl(var(--gold)/0.2)", color: "hsl(var(--gold)/0.7)" }}
                     >
-                      {platform.slice(0, 2).toUpperCase()}
+                      <SocialIcon platform={platform} size={15} />
                     </a>
                   ))}
                 </div>
