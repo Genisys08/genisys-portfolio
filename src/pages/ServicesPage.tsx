@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check, X, ArrowLeft } from "lucide-react";
 import { useScramble } from "@/hooks/useScramble";
@@ -23,11 +24,13 @@ function BackBtn() {
 interface Props { onContact: () => void; }
 
 export default function ServicesPage({ onContact }: Props) {
+  // Always start at the top when this page mounts
+  useEffect(() => { window.scrollTo(0, 0); document.documentElement.scrollTop = 0; }, []);
   const heading = useScramble("SERVICES", 1100);
 
   return (
     <>
-      <section className="relative px-4 sm:px-8 pt-32 pb-20 min-h-[60vh]">
+      <section className="relative px-4 sm:px-8 pt-32 pb-20 min-h-screen">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0"
@@ -46,7 +49,6 @@ export default function ServicesPage({ onContact }: Props) {
             a visual system that outlasts trends and outlasts competitors.
           </p>
 
-          {/* Availability badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-16"
             style={{ border: "1px solid hsl(var(--gold)/0.3)" }}>
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -57,7 +59,6 @@ export default function ServicesPage({ onContact }: Props) {
             </span>
           </div>
 
-          {/* Pricing grid */}
           <div className="grid sm:grid-cols-3 gap-5">
             {PRICING.map((tier, i) => (
               <motion.div
@@ -89,21 +90,11 @@ export default function ServicesPage({ onContact }: Props) {
                   </div>
                 )}
                 <div className="p-6 pb-4">
-                  <div className="font-mono text-[10px] tracking-[0.4em] text-gold/80 mb-3">
-                    {tier.tier}
-                  </div>
-                  <div className="font-display font-black text-4xl gold-text mb-1">
-                    {tier.price}
-                  </div>
-                  <div className="font-mono text-[10px] tracking-[0.2em] text-cream/50 mb-4">
-                    {tier.period.toUpperCase()}
-                  </div>
-                  <p className="text-cream/60 text-xs leading-relaxed mb-1 italic">
-                    {tier.tagline}
-                  </p>
-                  <p className="text-cream/70 text-sm leading-relaxed">
-                    {tier.description}
-                  </p>
+                  <div className="font-mono text-[10px] tracking-[0.4em] text-gold/80 mb-3">{tier.tier}</div>
+                  <div className="font-display font-black text-4xl gold-text mb-1">{tier.price}</div>
+                  <div className="font-mono text-[10px] tracking-[0.2em] text-cream/50 mb-4">{tier.period.toUpperCase()}</div>
+                  <p className="text-cream/60 text-xs leading-relaxed mb-1 italic">{tier.tagline}</p>
+                  <p className="text-cream/70 text-sm leading-relaxed">{tier.description}</p>
                 </div>
 
                 <div className="px-6 pb-4 flex-1">
@@ -140,12 +131,18 @@ export default function ServicesPage({ onContact }: Props) {
             ))}
           </div>
 
-          {/* Small print */}
           <p className="mt-8 text-center font-mono text-[10px] tracking-[0.2em] text-cream/35">
-            ALL PRICES IN USD · PAYMENT VIA STRIPE, WISE, OR CRYPTO ·{" "}
-            <a href={`mailto:${STUDIO.email}`} className="text-gold/50 hover:text-gold transition-colors">
-              {STUDIO.email.toUpperCase()}
-            </a>
+            ALL PRICES IN USD · PAYMENT VIA STRIPE, WISE, OR CRYPTO
+            {import.meta.env.VITE_CONTACT_EMAIL && (
+              <> ·{" "}
+                <a
+                  href={`mailto:${import.meta.env.VITE_CONTACT_EMAIL}`}
+                  className="text-gold/50 hover:text-gold transition-colors"
+                >
+                  {(import.meta.env.VITE_CONTACT_EMAIL as string).toUpperCase()}
+                </a>
+              </>
+            )}
           </p>
         </div>
       </section>

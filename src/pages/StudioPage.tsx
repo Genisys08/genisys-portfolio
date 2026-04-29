@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { useScramble } from "@/hooks/useScramble";
@@ -36,11 +37,13 @@ function BackBtn() {
 interface Props { onContact: () => void; }
 
 export default function StudioPage({ onContact }: Props) {
+  // Always start at the top when this page mounts
+  useEffect(() => { window.scrollTo(0, 0); document.documentElement.scrollTop = 0; }, []);
   const heading = useScramble("THE STUDIO", 1100);
 
   return (
     <>
-      <section className="relative px-4 sm:px-8 pt-32 pb-20">
+      <section className="relative px-4 sm:px-8 pt-32 pb-20 min-h-screen">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0"

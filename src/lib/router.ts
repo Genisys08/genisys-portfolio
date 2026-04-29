@@ -4,6 +4,7 @@ export type Route =
   | { page: "home" }
   | { page: "services" }
   | { page: "studio" }
+  | { page: "settings" }
   | { page: "case-study"; id: string }
   | { page: "not-found" };
 
@@ -17,13 +18,13 @@ export function consumePendingScroll(): string | null {
 }
 
 function parseHash(hash: string): Route {
-  // Pages are prefixed with #/ — anything else is a section scroll on home
   if (!hash || hash === "#" || hash === "#/" || !hash.startsWith("#/")) {
     return { page: "home" };
   }
-  const path = hash.slice(2); // strip #/
+  const path = hash.slice(2);
   if (path === "services")         return { page: "services" };
   if (path === "studio")           return { page: "studio" };
+  if (path === "settings")         return { page: "settings" };
   if (path.startsWith("work/"))    return { page: "case-study", id: path.slice(5) };
   return { page: "not-found" };
 }
@@ -38,13 +39,11 @@ export function useRouter(): Route {
   return route;
 }
 
-/** Navigate to a page route */
 export function navigatePage(path: string) {
   window.location.hash = `#/${path}`;
   window.scrollTo({ top: 0 });
 }
 
-/** Navigate to home then scroll to a section */
 export function navigateSection(sectionId: string) {
   _pendingScroll = sectionId;
   if (parseHash(window.location.hash).page !== "home") {

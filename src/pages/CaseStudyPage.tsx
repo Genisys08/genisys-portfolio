@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, ChevronLeft } from "lucide-react";
 import { useScramble } from "@/hooks/useScramble";
@@ -9,6 +9,8 @@ import Footer from "@/components/Footer";
 interface Props { id: string; onContact: () => void; }
 
 export default function CaseStudyPage({ id, onContact }: Props) {
+  // Always start at the top when this page mounts or the case study changes
+  useEffect(() => { window.scrollTo(0, 0); document.documentElement.scrollTop = 0; }, [id]);
   const item = useMemo(() => portfolio.find(p => p.id === id), [id]);
 
   // Only items with case studies get their own page

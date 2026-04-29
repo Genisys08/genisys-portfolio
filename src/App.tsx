@@ -1,5 +1,5 @@
 import { Analytics } from "@vercel/analytics/react";
-import { useEffect, useState }   from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import ErrorBoundary              from "@/components/ErrorBoundary";
 import LiquidCanvas               from "@/components/LiquidCanvas";
@@ -7,7 +7,7 @@ import EmberParticles             from "@/components/EmberParticles";
 import MagneticCursor             from "@/components/MagneticCursor";
 import GoldDustTrail              from "@/components/GoldDustTrail";
 import Preloader                  from "@/components/Preloader";
-import MusicPlayer               from "@/components/MusicPlayer";
+import MusicPlayer, { type MusicPlayerHandle } from "@/components/MusicPlayer";
 import Navigation                 from "@/components/Navigation";
 import ContactModal               from "@/components/ContactModal";
 import Letterbox                  from "@/components/Letterbox";
@@ -23,25 +23,41 @@ import ServicesPage               from "@/pages/ServicesPage";
 import StudioPage                 from "@/pages/StudioPage";
 import CaseStudyPage              from "@/pages/CaseStudyPage";
 import NotFoundPage               from "@/pages/NotFoundPage";
+import SettingsPage               from "@/pages/SettingsPage";
 import { useLenis }               from "@/hooks/useLenis";
 import { useVhFix }               from "@/hooks/useVhFix";
 import { useReducedMotion }       from "@/hooks/useReducedMotion";
 import { GyroscopeProvider }      from "@/contexts/GyroscopeContext";
+import { SettingsProvider, useSettings } from "@/contexts/SettingsContext";
 import { ToastProvider }          from "@/contexts/ToastContext";
 import { getDeviceTier }          from "@/lib/deviceTier";
 import { useRouter }              from "@/lib/router";
 
 const TIER = getDeviceTier();
 
-export default function App() {
+function AppInner() {
+  const { settings } = useSettings();
   const [loaded,        setLoaded]        = useState(false);
   const [contactOpen,   setOpen]          = useState(false);
   const [cookieShowing, setCookieShowing] = useState(false);
+  const [musicOpen,     setMusicOpen]     = useState(false);
+  const musicRef = useRef<MusicPlayerHandle>(null);
 
   const reduced = useReducedMotion();
   const route   = useRouter();
   useLenis();
   useVhFix();
+
+  // Reset scroll to top whenever navigating to a non-home page
+  useEffect(() => {
+    if (route.page !== "home") {
+      // rAF ensures React has painted the new page before scrolling
+      requestAnimationFrame(() => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+      });
+    }
+  }, [route.page]);
 
   useEffect(() => {
     const h = () => setOpen(true);
@@ -49,9 +65,9 @@ export default function App() {
     return () => window.removeEventListener("open-contact", h);
   }, []);
 
-  const showEmbers   = !reduced && TIER !== "low";
-  const showGoldDust = !reduced && TIER === "high";
-  const showAurora   = !reduced && TIER !== "low";
+  const showEmbers   = settings.particles      && !settings.reducedMotion && TIER !== "low";
+  const showGoldDust = settings.goldDust        && !settings.reducedMotion && TIER === "high";
+  const showAurora   = settings.aurora          && !settings.reducedMotion && TIER !== "low";
 
   // Unique key per page — drives AnimatePresence transition
   const pageKey = route.page === "case-study"
@@ -63,6 +79,7 @@ export default function App() {
       case "home":       return <HomePage     onContact={() => setOpen(true)} />;
       case "services":   return <ServicesPage onContact={() => setOpen(true)} />;
       case "studio":     return <StudioPage   onContact={() => setOpen(true)} />;
+      case "settings":   return <SettingsPage onContact={() => setOpen(true)} />;
       case "case-study": return <CaseStudyPage id={route.id} onContact={() => setOpen(true)} />;
       default:           return <NotFoundPage />;
     }
@@ -76,19 +93,19 @@ export default function App() {
           <LiquidCanvas />
           {showEmbers   && <EmberParticles />}
           {showGoldDust && <GoldDustTrail />}
-          <ClickBurst />
-          <ScrollProgressBar />
-          <MagneticCursor />
-          <Letterbox />
-          <ScrollVignette />
-          <CommandPalette />
+          {settings.clickBurst && !settings.reducedMotion && <ClickBurst />}
+          {settings.scrollProgress && <ScrollProgressBar />}
+          {settings.magneticCursor && !settings.reducedMotion && <MagneticCursor />}
+          {settings.letterbox && !settings.reducedMotion && <Letterbox />}
+          {settings.scrollVignette && <ScrollVignette />}
+          {settings.commandPalette && <CommandPalette />}
           <CookieBanner show={loaded} onVisibleChange={setCookieShowing} />
           <BackToTop raised={cookieShowing} />
           {!loaded && <Preloader onDone={() => setLoaded(true)} />}
-          <MusicPlayer />
+          <MusicPlayer ref={musicRef} open={musicOpen} onClose={() => setMusicOpen(false)} />
 
           <div className="relative z-10">
-            <Navigation route={route} />
+            <Navigation route={route} musicPlaying={musicRef.current?.playing} onMusicToggle={() => setMusicOpen(p => !p)} />
             <main>
               {/*
                * FIX-7: AnimatePresence mode="wait" fades the current page out
@@ -114,5 +131,13 @@ export default function App() {
       </ToastProvider>
       <Analytics />
     </ErrorBoundary>
+  );
+}
+
+export default function App() {
+  return (
+    <SettingsProvider>
+      <AppInner />
+    </SettingsProvider>
   );
 }

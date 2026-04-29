@@ -1,9 +1,12 @@
 #!/bin/bash
 
-echo "Packaging Genisys project for Lovable..."
+echo "Packaging Genisys project for AI..."
 
-# We selectively tar only the vital source files, leaving behind node_modules and old scripts.
+# We selectively tar only the vital source files, excluding node_modules, old scripts, and heavy audio files.
 tar -czvf ~/storage/shared/genisys_export.tar.gz \
+  --exclude='*.mp3' \
+  --exclude='*.wav' \
+  --exclude='*.ogg' \
   README.md \
   index.html \
   package.json \
@@ -16,5 +19,5 @@ tar -czvf ~/storage/shared/genisys_export.tar.gz \
   vite.config.ts
 
 echo "---------------------------------------------------"
-echo "Boom. Export complete!"
+echo "Boom. Export complete! Audio tracks successfully blocked from the payload."
 echo "Check the root of your phone's internal storage for 'genisys_export.tar.gz'."

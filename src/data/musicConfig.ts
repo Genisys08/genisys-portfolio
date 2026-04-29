@@ -31,26 +31,73 @@ export interface Track {
 // ─── ADD YOUR SONGS BELOW ────────────────────────────────────────────────────
 export const PLAYLIST: Track[] = [
   {
-    id:     "vibe-01",
+    id:     "track-01",
     title:  "Dark Italian",
     artist: "Genisys Studio",
-    src:    "/music/vibe.mp3",          // ← EDITED PATH
+    src:    "/music/vibe.mp3",
     accent: "#C8A84B",
   },
-
-  // Uncomment and edit to add more tracks:
-  // {
-  //   id:     "vibe-02",
-  //   title:  "Phantom Pulse",
-  //   artist: "Genisys Studio",
-  //   src:    "/music/phantom-pulse.mp3",
-  //   accent: "#8B5CF6",
-  // },
-  // {
-  //   id:     "vibe-03",
-  //   title:  "Iron Frequency",
-  //   artist: "Genisys Studio",
-  //   src:    "/music/iron-frequency.mp3",
-  //   accent: "#EF4444",
-  // },
+  {
+    id:     "track-02",
+    title:  "Adonai",
+    artist: "Genisys Studio",
+    src:    "/music/Adonai .mp3",
+    accent: "#8B5CF6",
+  },
+  {
+    id:     "track-03",
+    title:  "Armor on My Chest",
+    artist: "Genisys Studio",
+    src:    "/music/Armor_on_My_Chest.mp3",
+    accent: "#EF4444",
+  },
+  {
+    id:     "track-04",
+    title:  "Heart of Steel",
+    artist: "Genisys Studio",
+    src:    "/music/Heart of Steel (2).mp3",
+    accent: "#3B82F6",
+  },
+  {
+    id:     "track-05",
+    title:  "Hybrid",
+    artist: "Genisys Studio",
+    src:    "/music/Hybrid .mp3",
+    accent: "#10B981",
+  },
+  {
+    id:     "track-06",
+    title:  "March of the Ancient Night",
+    artist: "Genisys Studio",
+    src:    "/music/March of the Ancient Night (Cover) (1).mp3",
+    accent: "#F59E0B",
+  },
+  {
+    id:     "track-07",
+    title:  "The Heaven's Choir",
+    artist: "Genisys Studio",
+    src:    "/music/The Heaven's Choir (1).mp3",
+    accent: "#EC4899",
+  },
+  {
+    id:     "track-08",
+    title:  "The Special Forces",
+    artist: "Genisys Studio",
+    src:    "/music/The Special Forces.mp3",
+    accent: "#6366F1",
+  },
+  {
+    id:     "track-09",
+    title:  "UHC",
+    artist: "Genisys Studio",
+    src:    "/music/UHC (Cover).mp3",
+    accent: "#14B8A6",
+  },
+  {
+    id:     "track-10",
+    title:  "Unbreakable",
+    artist: "Genisys Studio",
+    src:    "/music/Unbreakable.mp3",
+    accent: "#EAB308",
+  },
 ];

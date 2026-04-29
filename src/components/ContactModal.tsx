@@ -12,6 +12,14 @@ export default function ContactModal({ open, onClose }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formRef.current || status === "sending") return;
+
+    const key = import.meta.env.VITE_WEB3FORMS_KEY;
+    if (!key) {
+      console.error("VITE_WEB3FORMS_KEY is not set in your .env file.");
+      setStatus("error");
+      return;
+    }
+
     setStatus("sending");
     try {
       const data = new FormData(formRef.current);
@@ -19,7 +27,6 @@ export default function ContactModal({ open, onClose }: Props) {
       const json = await res.json();
       if (json.success) {
         setStatus("sent");
-        // FIX-9: Extended from 3s → 5s. User now also has a manual close btn.
         setTimeout(() => { setStatus("idle"); onClose(); formRef.current?.reset(); }, 5000);
       } else {
         setStatus("error");
@@ -77,7 +84,6 @@ export default function ContactModal({ open, onClose }: Props) {
                   We'll review your brief and get back to you within 24 hours.
                   Expect something cinematic.
                 </p>
-                {/* FIX-9: Manual close during success state */}
                 <button
                   onClick={handleClose}
                   className="mt-2 px-6 py-2.5 rounded-full glass gold-border-glow font-mono text-[10px] tracking-[0.3em] text-gold hover:text-cream transition-colors"
@@ -97,12 +103,14 @@ export default function ContactModal({ open, onClose }: Props) {
                 <p className="text-cream/70 text-sm">
                   Message could not be delivered right now.
                 </p>
-                <a
-                  href={`mailto:${import.meta.env.VITE_CONTACT_EMAIL ?? "contact@genisysgraphics.com"}?subject=Project%20Enquiry`}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full glass-strong gold-border-glow font-mono text-[10px] tracking-[0.3em] text-gold hover:text-cream transition-colors"
-                >
-                  EMAIL US DIRECTLY →
-                </a>
+                {import.meta.env.VITE_CONTACT_EMAIL && (
+                  <a
+                    href={`mailto:${import.meta.env.VITE_CONTACT_EMAIL}?subject=Project%20Enquiry`}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full glass-strong gold-border-glow font-mono text-[10px] tracking-[0.3em] text-gold hover:text-cream transition-colors"
+                  >
+                    EMAIL US DIRECTLY →
+                  </a>
+                )}
                 <button
                   onClick={() => setStatus("idle")}
                   className="font-mono text-[10px] tracking-[0.3em] text-cream/40 hover:text-gold transition-colors mt-1"
@@ -115,15 +123,14 @@ export default function ContactModal({ open, onClose }: Props) {
             {/* Form */}
             {(status === "idle" || status === "sending") && (
               <form ref={formRef} onSubmit={handleSubmit} className="p-6 pt-5 space-y-4">
-                {/* ⚠  Set VITE_WEB3FORMS_KEY in your .env file — get a free key at https://web3forms.com */}
                 <input type="hidden" name="access_key" value={import.meta.env.VITE_WEB3FORMS_KEY ?? ""} />
                 <input type="hidden" name="subject" value="New Project Enquiry — Genisys Graphics" />
                 <input type="checkbox" name="botcheck" className="hidden" style={{ display: "none" }} />
 
                 {[
-                  { name: "name",    label: "Name",    type: "text",  placeholder: "Your full name" },
-                  { name: "email",   label: "Email",   type: "email", placeholder: "your@email.com" },
-                  { name: "company", label: "Brand / Company", type: "text", placeholder: "Optional" },
+                  { name: "name",    label: "Name",           type: "text",  placeholder: "Your full name" },
+                  { name: "email",   label: "Email",          type: "email", placeholder: "your@email.com" },
+                  { name: "company", label: "Brand / Company",type: "text",  placeholder: "Optional" },
                 ].map(f => (
                   <div key={f.name}>
                     <label className="block font-mono text-[9px] tracking-[0.35em] text-gold/70 mb-1.5">

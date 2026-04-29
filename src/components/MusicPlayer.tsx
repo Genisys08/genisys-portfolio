@@ -1,36 +1,39 @@
 /**
- * MusicPlayer — v3.8
+ * MusicPlayer — v4.0
  *
- * Layout:
- *   • Small circular button (bottom-left, always present) — same spot as
- *     the old VibeToggle.  Shows EQ bars while playing, music icon while
- *     paused.
- *   • Tap button → panel slides up with full controls + playlist.
- *   • Panel X button → collapses back to just the small button.
- *   • While music plays → full-screen ambient EQ canvas sits behind all
- *     page content (z-3, pointer-events-none) as a living background.
- *
- * Add songs in  src/data/musicConfig.ts — no edits here needed.
+ * No longer a floating button.
+ * Controlled via props from App.tsx which passes state up to Navigation.
+ * The header music icon (in Navigation) calls onMusicToggle.
+ * This component only renders:
+ *   1. The ambient background EQ canvas (always present while playing)
+ *   2. The sliding panel (opened/closed via the `open` prop)
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from "react";
 import { AnimatePresence, motion }     from "framer-motion";
-import {
-  List, Music2, Pause, Play,
-  SkipBack, SkipForward, Volume2, X,
-} from "lucide-react";
+import { List, Music2, Pause, Play, SkipBack, SkipForward, Volume2, X } from "lucide-react";
 import { PLAYLIST }  from "@/data/musicConfig";
 import { haptic }    from "@/lib/haptics";
 
-export default function MusicPlayer() {
+export interface MusicPlayerHandle {
+  playing: boolean;
+}
+
+interface Props {
+  open:     boolean;
+  onClose:  () => void;
+}
+
+const MusicPlayer = forwardRef<MusicPlayerHandle, Props>(function MusicPlayer(
+  { open, onClose },
+  ref,
+) {
   const [trackIdx, setTrackIdx] = useState(0);
   const [playing,  setPlaying]  = useState(false);
-  const [open,     setOpen]     = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [showList, setShowList] = useState(false);
   const [graphOk,  setGraphOk]  = useState(false);
 
-  // Stable refs
   const audioRef      = useRef<HTMLAudioElement | null>(null);
   const ctxRef        = useRef<AudioContext | null>(null);
   const analyserRef   = useRef<AnalyserNode | null>(null);
@@ -40,7 +43,10 @@ export default function MusicPlayer() {
   const playingRef    = useRef(false);
   const idxRef        = useRef(0);
 
-  // ── 1. Single audio element ────────────────────────────────────────
+  // Expose playing state to parent via ref
+  useImperativeHandle(ref, () => ({ playing }), [playing]);
+
+  // Single audio element
   useEffect(() => {
     const a   = new Audio(PLAYLIST[0].src);
     a.preload = "metadata";
@@ -53,14 +59,10 @@ export default function MusicPlayer() {
       setPlaying(true);
     });
     audioRef.current = a;
-    return () => {
-      a.pause(); a.src = "";
-      cancelAnimationFrame(animRef.current);
-      ctxRef.current?.close();
-    };
+    return () => { a.pause(); a.src = ""; cancelAnimationFrame(animRef.current); ctxRef.current?.close(); };
   }, []);
 
-  // ── 2. Swap src on track change ────────────────────────────────────
+  // Swap src on track change
   useEffect(() => {
     idxRef.current = trackIdx;
     const a = audioRef.current;
@@ -71,7 +73,7 @@ export default function MusicPlayer() {
     if (playingRef.current) a.play().catch(() => setPlaying(false));
   }, [trackIdx]);
 
-  // ── 3. Play / pause ────────────────────────────────────────────────
+  // Play / pause
   useEffect(() => {
     playingRef.current = playing;
     const a = audioRef.current;
@@ -79,23 +81,16 @@ export default function MusicPlayer() {
     if (playing) {
       if (!ctxRef.current) {
         try {
-          const AudioCtx =
-            window.AudioContext ||
-            (window as unknown as { webkitAudioContext: typeof AudioContext })
-              .webkitAudioContext;
+          const AudioCtx = window.AudioContext ||
+            (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
           const ctx = new AudioCtx();
           const src = ctx.createMediaElementSource(a);
           const an  = ctx.createAnalyser();
-          an.fftSize              = 128;
-          an.smoothingTimeConstant = 0.80;
-          src.connect(an);
-          an.connect(ctx.destination);
-          ctxRef.current     = ctx;
-          analyserRef.current = an;
+          an.fftSize = 128; an.smoothingTimeConstant = 0.80;
+          src.connect(an); an.connect(ctx.destination);
+          ctxRef.current = ctx; analyserRef.current = an;
           setGraphOk(true);
-        } catch {
-          console.warn("[MusicPlayer] Web Audio unavailable");
-        }
+        } catch { console.warn("[MusicPlayer] Web Audio unavailable"); }
       }
       ctxRef.current?.resume();
       a.play().catch(() => setPlaying(false));
@@ -104,86 +99,76 @@ export default function MusicPlayer() {
     }
   }, [playing]);
 
-  // ── 4. BG canvas: keep sized to viewport ──────────────────────────
+  // Keep BG canvas sized to viewport
   useEffect(() => {
     const resize = () => {
       const c = bgCanvasRef.current;
       if (!c) return;
-      c.width  = window.innerWidth;
-      c.height = window.innerHeight;
+      c.width = window.innerWidth; c.height = window.innerHeight;
     };
     resize();
     window.addEventListener("resize", resize, { passive: true });
     return () => window.removeEventListener("resize", resize);
   }, []);
 
-  // ── 5. Unified animation loop (draws bg + panel canvas each tick) ──
+  // Animation loop
   useEffect(() => {
     const analyser = analyserRef.current;
     cancelAnimationFrame(animRef.current);
 
-    // Helper: draw idle ghost bars on a canvas
-    const drawIdle = (ctx: CanvasRenderingContext2D, w: number, h: number, cols: number, alpha: number) => {
-      ctx.clearRect(0, 0, w, h);
-      const bw = w / cols;
-      for (let i = 0; i < cols; i++) {
-        const barH = 2 + Math.sin(i * 0.6) * 2;
-        ctx.fillStyle = `hsla(44,72%,54%,${alpha})`;
-        ctx.fillRect(i * bw, h - barH, bw - 1, barH);
-      }
-    };
-
     if (!playing || !analyser) {
-      // Idle states
       const bg  = bgCanvasRef.current;
       const pan = panCanvasRef.current;
-      if (bg)  { const c = bg.getContext("2d");  if (c) c.clearRect(0, 0, bg.width, bg.height); }
-      if (pan) { const c = pan.getContext("2d"); if (c) drawIdle(c, pan.width, pan.height, 20, 0.12); }
+      if (bg)  { const c = bg.getContext("2d");  if (c) c.clearRect(0,0,bg.width,bg.height); }
+      if (pan) {
+        const c = pan.getContext("2d");
+        if (c) {
+          c.clearRect(0,0,pan.width,pan.height);
+          const cols = 24, bw = pan.width/cols;
+          for (let i=0;i<cols;i++) {
+            const h = 2 + Math.sin(i*0.6)*2;
+            c.fillStyle = `hsla(44,72%,54%,0.1)`;
+            c.fillRect(i*bw, pan.height-h, bw-1, h);
+          }
+        }
+      }
       return;
     }
 
-    const bufLen  = analyser.frequencyBinCount;
-    const freqData = new Uint8Array(bufLen);
+    const bufLen = analyser.frequencyBinCount;
+    const freq   = new Uint8Array(bufLen);
 
     const tick = () => {
       animRef.current = requestAnimationFrame(tick);
-      analyser.getByteFrequencyData(freqData);
+      analyser.getByteFrequencyData(freq);
 
-      // ── Background canvas: wide ambient bars ──
+      // Background — wide subtle bars
       const bg = bgCanvasRef.current;
       if (bg && bg.width > 0) {
         const ctx = bg.getContext("2d");
         if (ctx) {
-          ctx.clearRect(0, 0, bg.width, bg.height);
-          // Use 16 buckets across the full width
-          const cols = 16;
-          const bw   = bg.width / cols;
-          const step = Math.floor(bufLen / cols);
-          for (let i = 0; i < cols; i++) {
-            // Average a few bins per column for smooth large bars
-            let sum = 0;
-            for (let k = 0; k < step; k++) sum += freqData[i * step + k];
-            const norm = (sum / step) / 255;
-            const barH = norm * bg.height * 0.55;  // max 55% of screen height
-            const alpha = 0.03 + norm * 0.05;       // 3–8% opacity — very subtle
-            ctx.fillStyle = `hsla(44,72%,54%,${alpha})`;
-            ctx.fillRect(i * bw, bg.height - barH, bw - 2, barH);
+          ctx.clearRect(0,0,bg.width,bg.height);
+          const cols = 16, bw = bg.width/cols, step = Math.floor(bufLen/cols);
+          for (let i=0;i<cols;i++) {
+            let sum=0; for (let k=0;k<step;k++) sum+=freq[i*step+k];
+            const norm=(sum/step)/255;
+            ctx.fillStyle=`hsla(44,72%,54%,${0.025+norm*0.045})`;
+            ctx.fillRect(i*bw, bg.height-norm*bg.height*0.5, bw-2, norm*bg.height*0.5);
           }
         }
       }
 
-      // ── Panel canvas: tight frequency bars ──
+      // Panel visualiser
       const pan = panCanvasRef.current;
       if (pan && pan.width > 0) {
         const ctx = pan.getContext("2d");
         if (ctx) {
-          ctx.clearRect(0, 0, pan.width, pan.height);
-          const bw = pan.width / bufLen;
-          for (let i = 0; i < bufLen; i++) {
-            const norm = freqData[i] / 255;
-            const h    = Math.max(2, norm * pan.height);
-            ctx.fillStyle = `hsla(44,72%,54%,${0.22 + norm * 0.78})`;
-            ctx.fillRect(i * bw, pan.height - h, bw - 1, h);
+          ctx.clearRect(0,0,pan.width,pan.height);
+          const bw = pan.width/bufLen;
+          for (let i=0;i<bufLen;i++) {
+            const norm=freq[i]/255, h=Math.max(2,norm*pan.height);
+            ctx.fillStyle=`hsla(44,72%,54%,${0.22+norm*0.78})`;
+            ctx.fillRect(i*bw, pan.height-h, bw-1, h);
           }
         }
       }
@@ -193,39 +178,26 @@ export default function MusicPlayer() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing, graphOk]);
 
-  // ── Controls ───────────────────────────────────────────────────────
-  const prevTrack  = () => {
-    haptic(8);
-    const a = audioRef.current;
-    if (a && a.currentTime > 3) { a.currentTime = 0; return; }
-    setTrackIdx(i => (i - 1 + PLAYLIST.length) % PLAYLIST.length);
-  };
-  const nextTrack  = () => { haptic(8); setTrackIdx(i => (i + 1) % PLAYLIST.length); };
-  const togglePlay = () => { haptic(15); setPlaying(p => !p); };
-  const openPanel  = () => { haptic(10); setOpen(true); };
-  const closePanel = () => { haptic(8);  setOpen(false); setShowList(false); };
+  const prevTrack  = () => { haptic(8); const a=audioRef.current; if(a&&a.currentTime>3){a.currentTime=0;return;} setTrackIdx(i=>(i-1+PLAYLIST.length)%PLAYLIST.length); };
+  const nextTrack  = () => { haptic(8); setTrackIdx(i=>(i+1)%PLAYLIST.length); };
+  const togglePlay = () => { haptic(15); setPlaying(p=>!p); };
 
   const seek = (e: React.MouseEvent<HTMLDivElement>) => {
-    const a = audioRef.current;
-    if (!a || !duration) return;
-    const r = e.currentTarget.getBoundingClientRect();
-    a.currentTime = Math.max(0, Math.min(duration, ((e.clientX - r.left) / r.width) * duration));
+    const a=audioRef.current; if(!a||!duration) return;
+    const r=e.currentTarget.getBoundingClientRect();
+    a.currentTime=Math.max(0,Math.min(duration,((e.clientX-r.left)/r.width)*duration));
   };
 
   const fmt = (s: number) =>
-    (!isFinite(s) || isNaN(s))
-      ? "0:00"
-      : `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+    (!isFinite(s)||isNaN(s)) ? "0:00"
+      : `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
 
   const track = PLAYLIST[trackIdx];
-  const pct   = duration ? Math.min(100, (progress / duration) * 100) : 0;
-
-  // EQ bars for the small button (same style as old VibeToggle)
-  const eqDelays = [0, 0.18, 0.36, 0.12];
+  const pct   = duration ? Math.min(100,(progress/duration)*100) : 0;
 
   return (
     <>
-      {/* ── Ambient background EQ canvas ──────────────────────────── */}
+      {/* Ambient BG EQ canvas */}
       <canvas
         ref={bgCanvasRef}
         aria-hidden
@@ -233,204 +205,141 @@ export default function MusicPlayer() {
         style={{ zIndex: 3 }}
       />
 
-      {/* ── Music panel (slides up from button) ───────────────────── */}
+      {/* Sliding panel — opens from top bar */}
       <AnimatePresence>
         {open && (
-          <motion.div
-            key="music-panel"
-            initial={{ opacity: 0, y: 24, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0,  scale: 1    }}
-            exit={{   opacity: 0, y: 16, scale: 0.97 }}
-            transition={{ duration: 0.32, ease: [0.7, 0, 0.3, 1] }}
-            className="fixed glass-strong specular rounded-2xl overflow-hidden"
-            style={{
-              bottom:    "5.5rem",           // sits just above the button
-              left:      "1rem",
-              width:     "min(320px, calc(100vw - 32px))",
-              zIndex:    92,
-              border:    "1px solid hsl(var(--gold)/0.25)",
-              boxShadow: "0 8px 48px hsl(var(--gold)/0.08), inset 0 0 28px hsl(var(--gold)/0.03)",
-            }}
-          >
-            {/* Panel header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
-              <div>
-                <p className="font-mono text-[9px] tracking-[0.4em] text-gold/65">NOW PLAYING</p>
-                <p className="font-mono text-[11px] tracking-[0.15em] text-cream/90 mt-0.5 truncate max-w-[200px]">
-                  {track.title}
-                </p>
-              </div>
-              <button
-                onClick={closePanel}
-                aria-label="Close player"
-                className="grid place-items-center w-8 h-8 rounded-full glass transition-colors hover:text-gold text-cream/40"
-                style={{ border: "1px solid hsl(var(--gold)/0.2)" }}
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* Visualiser */}
-            <canvas
-              ref={panCanvasRef}
-              width={320}
-              height={36}
-              className="w-full block"
-              aria-hidden
-              style={{ opacity: playing ? 1 : 0.4, transition: "opacity 0.5s" }}
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="mp-backdrop"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.22 }}
+              className="fixed inset-0 z-[88]"
+              style={{ background: "rgba(0,0,0,0.45)" }}
+              onClick={onClose}
             />
 
-            {/* Seek bar */}
-            <div
-              className="w-full cursor-pointer relative"
-              style={{ height: "3px", background: "hsl(0 0% 100% / 0.07)" }}
-              onClick={seek}
-              role="slider"
-              aria-label="Seek"
-              aria-valuenow={Math.round(pct)}
-              aria-valuemin={0}
-              aria-valuemax={100}
+            {/* Panel — drops down from just below the header */}
+            <motion.div
+              key="mp-panel"
+              initial={{ opacity: 0, y: -16, scale: 0.97 }}
+              animate={{ opacity: 1,  y: 0,  scale: 1    }}
+              exit={{   opacity: 0,  y: -10, scale: 0.98 }}
+              transition={{ duration: 0.3, ease: [0.7, 0, 0.3, 1] }}
+              className="fixed z-[89] glass-strong specular rounded-2xl overflow-hidden"
+              style={{
+                top:       "64px",
+                right:     "12px",
+                width:     "min(300px, calc(100vw - 24px))",
+                border:    "1px solid hsl(var(--gold)/0.25)",
+                boxShadow: "0 8px 48px hsl(var(--gold)/0.08)",
+              }}
             >
-              <div
-                className="absolute inset-y-0 left-0"
-                style={{ width: `${pct}%`, background: "hsl(var(--gold)/0.85)", transition: "width 0.25s linear" }}
-              />
-            </div>
-
-            {/* Time row */}
-            <div className="flex justify-between px-4 pt-2 pb-0">
-              <span className="font-mono text-[8px] text-cream/25">{fmt(progress)}</span>
-              <span className="font-mono text-[8px] text-cream/25">{fmt(duration)}</span>
-            </div>
-
-            {/* Controls */}
-            <div className="flex items-center justify-center gap-3 px-4 py-3">
-              {PLAYLIST.length > 1 && (
-                <button onClick={prevTrack} aria-label="Previous"
-                  className="grid place-items-center w-8 h-8 rounded-lg text-cream/50 hover:text-gold transition-colors">
-                  <SkipBack className="w-4 h-4" />
+              {/* Header row */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+                <div>
+                  <p className="font-mono text-[8px] tracking-[0.45em] text-gold/60">NOW PLAYING</p>
+                  <p className="font-mono text-[11px] tracking-[0.12em] text-cream/90 mt-0.5 truncate max-w-[180px]">
+                    {track.title}
+                  </p>
+                </div>
+                <button onClick={onClose} aria-label="Close player"
+                  className="grid place-items-center w-8 h-8 rounded-full text-cream/35 hover:text-gold transition-colors"
+                  style={{ background: "hsl(0 0% 100%/0.04)", border: "1px solid hsl(0 0% 100%/0.08)" }}>
+                  <X className="w-3.5 h-3.5" />
                 </button>
-              )}
-              <button
-                onClick={togglePlay}
-                aria-label={playing ? "Pause" : "Play"}
-                className="grid place-items-center w-12 h-12 rounded-full transition-all hover:scale-105"
-                style={{ background: "hsl(var(--gold)/0.15)", border: "1px solid hsl(var(--gold)/0.45)" }}
-              >
-                {playing
-                  ? <Pause className="w-5 h-5 text-gold" />
-                  : <Play  className="w-5 h-5 text-gold translate-x-[1px]" />
-                }
-              </button>
-              {PLAYLIST.length > 1 && (
-                <button onClick={nextTrack} aria-label="Next"
-                  className="grid place-items-center w-8 h-8 rounded-lg text-cream/50 hover:text-gold transition-colors">
-                  <SkipForward className="w-4 h-4" />
-                </button>
-              )}
-              <button
-                onClick={() => setShowList(p => !p)}
-                aria-label="Playlist"
-                aria-expanded={showList}
-                className={"grid place-items-center w-8 h-8 rounded-lg transition-colors ml-2 " +
-                  (showList ? "text-gold bg-gold/10" : "text-cream/40 hover:text-gold")}
-              >
-                <List className="w-4 h-4" />
-              </button>
-            </div>
+              </div>
 
-            {/* Playlist (collapsible) */}
-            <AnimatePresence>
-              {showList && (
-                <motion.div
-                  key="playlist"
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.28, ease: [0.7, 0, 0.3, 1] }}
-                  style={{ overflow: "hidden" }}
-                >
-                  <div className="border-t border-white/[0.06]">
-                    <p className="font-mono text-[8px] tracking-[0.4em] text-gold/50 px-4 py-2">
-                      PLAYLIST
-                    </p>
-                    <div className="max-h-48 overflow-y-auto overscroll-contain" style={{ scrollbarWidth: "none" }}>
-                      {PLAYLIST.map((t, i) => (
-                        <button
-                          key={t.id}
-                          onClick={() => { haptic(8); setTrackIdx(i); setPlaying(true); setShowList(false); }}
-                          className={"w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-white/[0.04] " +
-                            (i === trackIdx ? "bg-gold/[0.07]" : "")}
-                        >
-                          <div
-                            className="flex-none w-7 h-7 rounded-lg grid place-items-center"
-                            style={{
-                              background: `${t.accent ?? "#C8A84B"}18`,
-                              border: `1px solid ${t.accent ?? "#C8A84B"}44`,
-                            }}
-                          >
-                            {i === trackIdx && playing
-                              ? <Volume2 className="w-3 h-3" style={{ color: t.accent ?? "#C8A84B" }} />
-                              : <Music2  className="w-3 h-3 text-cream/30" />
-                            }
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className={"font-mono text-[10px] tracking-[0.1em] truncate " +
-                              (i === trackIdx ? "text-gold" : "text-cream/70")}>
-                              {t.title}
-                            </p>
-                            <p className="font-mono text-[8px] text-cream/28 truncate">{t.artist}</p>
-                          </div>
-                          {i === trackIdx && (
-                            <span className="flex-none flex items-end gap-[2px]" style={{ height: "14px" }}>
-                              {[0, 0.15, 0.3, 0.08].map((delay, j) => (
-                                <span key={j} className={playing ? "eq-bar" : ""}
-                                  style={{ display: "block", width: "2px", height: "100%",
-                                    borderRadius: "1px", background: "hsl(var(--gold)/0.75)",
-                                    transformOrigin: "bottom", animationDelay: `${delay}s` }} />
-                              ))}
-                            </span>
-                          )}
-                        </button>
-                      ))}
+              {/* Visualiser */}
+              <canvas ref={panCanvasRef} width={300} height={36} className="w-full block" aria-hidden
+                style={{ opacity: playing ? 1 : 0.45, transition: "opacity 0.5s" }} />
+
+              {/* Seek bar */}
+              <div className="w-full cursor-pointer relative" style={{ height: "3px", background: "hsl(0 0% 100%/0.07)" }}
+                onClick={seek} role="slider" aria-label="Seek" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}>
+                <div className="absolute inset-y-0 left-0"
+                  style={{ width:`${pct}%`, background:"hsl(var(--gold)/0.85)", transition:"width 0.25s linear" }} />
+              </div>
+
+              {/* Time */}
+              <div className="flex justify-between px-4 pt-2">
+                <span className="font-mono text-[8px] text-cream/22">{fmt(progress)}</span>
+                <span className="font-mono text-[8px] text-cream/22">{fmt(duration)}</span>
+              </div>
+
+              {/* Controls */}
+              <div className="flex items-center justify-center gap-3 px-4 py-3">
+                {PLAYLIST.length > 1 && (
+                  <button onClick={prevTrack} aria-label="Previous"
+                    className="grid place-items-center w-8 h-8 rounded-lg text-cream/50 hover:text-gold transition-colors">
+                    <SkipBack className="w-4 h-4" />
+                  </button>
+                )}
+                <button onClick={togglePlay} aria-label={playing ? "Pause" : "Play"}
+                  className="grid place-items-center w-12 h-12 rounded-full transition-all hover:scale-105"
+                  style={{ background:"hsl(var(--gold)/0.14)", border:"1px solid hsl(var(--gold)/0.45)" }}>
+                  {playing ? <Pause className="w-5 h-5 text-gold" /> : <Play className="w-5 h-5 text-gold translate-x-[1px]" />}
+                </button>
+                {PLAYLIST.length > 1 && (
+                  <button onClick={nextTrack} aria-label="Next"
+                    className="grid place-items-center w-8 h-8 rounded-lg text-cream/50 hover:text-gold transition-colors">
+                    <SkipForward className="w-4 h-4" />
+                  </button>
+                )}
+                <button onClick={() => setShowList(p=>!p)} aria-label="Playlist" aria-expanded={showList}
+                  className={"grid place-items-center w-8 h-8 rounded-lg transition-colors ml-1 " +
+                    (showList ? "text-gold bg-gold/10" : "text-cream/40 hover:text-gold")}>
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Playlist */}
+              <AnimatePresence>
+                {showList && (
+                  <motion.div key="playlist"
+                    initial={{ height:0, opacity:0 }} animate={{ height:"auto", opacity:1 }} exit={{ height:0, opacity:0 }}
+                    transition={{ duration:0.28, ease:[0.7,0,0.3,1] }} style={{ overflow:"hidden" }}>
+                    <div className="border-t border-white/[0.06]">
+                      <p className="font-mono text-[8px] tracking-[0.4em] text-gold/50 px-4 py-2">PLAYLIST</p>
+                      <div className="max-h-44 overflow-y-auto overscroll-contain" style={{ scrollbarWidth:"none" }}>
+                        {PLAYLIST.map((t,i) => (
+                          <button key={t.id}
+                            onClick={() => { haptic(8); setTrackIdx(i); setPlaying(true); setShowList(false); }}
+                            className={"w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-white/[0.04] " +
+                              (i===trackIdx ? "bg-gold/[0.07]" : "")}>
+                            <div className="flex-none w-7 h-7 rounded-lg grid place-items-center"
+                              style={{ background:`${t.accent??"#C8A84B"}18`, border:`1px solid ${t.accent??"#C8A84B"}44` }}>
+                              {i===trackIdx&&playing
+                                ? <Volume2 className="w-3 h-3" style={{ color:t.accent??"#C8A84B" }} />
+                                : <Music2  className="w-3 h-3 text-cream/30" />
+                              }
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={"font-mono text-[10px] tracking-[0.1em] truncate " + (i===trackIdx?"text-gold":"text-cream/70")}>{t.title}</p>
+                              <p className="font-mono text-[8px] text-cream/28 truncate">{t.artist}</p>
+                            </div>
+                            {i===trackIdx && (
+                              <span className="flex-none flex items-end gap-[2px]" style={{ height:"14px" }}>
+                                {[0,0.15,0.3,0.08].map((delay,j) => (
+                                  <span key={j} className={playing?"eq-bar":""}
+                                    style={{ display:"block", width:"2px", height:"100%", borderRadius:"1px",
+                                      background:"hsl(var(--gold)/0.75)", transformOrigin:"bottom", animationDelay:`${delay}s` }} />
+                                ))}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <p className="font-mono text-[8px] tracking-[0.1em] text-cream/15 px-4 py-2 border-t border-white/[0.04]">
-                      ADD TRACKS IN src/data/musicConfig.ts
-                    </p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
-
-      {/* ── Small circular button (always visible) ────────────────── */}
-      <button
-        onClick={openPanel}
-        aria-label={playing ? "Music playing — open player" : "Open music player"}
-        aria-expanded={open}
-        className="fixed bottom-6 left-6 z-[91] grid place-items-center w-12 h-12 sm:w-14 sm:h-14 rounded-full glass-strong gold-border-glow animate-border-pulse"
-      >
-        <span className="absolute inset-0 rounded-full pointer-events-none"
-          style={{ boxShadow: "inset 0 0 18px hsl(var(--gold)/.35)" }} />
-
-        {playing ? (
-          /* Live EQ bars while music plays */
-          <span className="flex items-end gap-[3px] h-5" aria-hidden>
-            {eqDelays.map((delay, i) => (
-              <span
-                key={i}
-                className="eq-bar w-[3px] h-full rounded-sm bg-gold"
-                style={{ animationDelay: `${delay}s`, boxShadow: "0 0 8px hsl(var(--gold)/0.85)" }}
-              />
-            ))}
-          </span>
-        ) : (
-          /* Music note when paused */
-          <Music2 className="w-5 h-5 text-gold" aria-hidden />
-        )}
-      </button>
     </>
   );
-}
+});
+
+export default MusicPlayer;

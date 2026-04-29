@@ -24,7 +24,7 @@ export default function BackToTop({ raised = false }: { raised?: boolean }) {
           style={{
             bottom:     raised
               ? "max(calc(env(safe-area-inset-bottom, 0px) + 155px), 163px)"
-              : "max(calc(env(safe-area-inset-bottom, 0px) + 24px), 32px)",
+              : "24px",
             transition: "bottom 0.4s cubic-bezier(0.7,0,0.3,1)",
           }}
         >

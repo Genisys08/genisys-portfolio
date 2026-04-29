@@ -1,187 +1,280 @@
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X } from "lucide-react";
-import { useScramble } from "@/hooks/useScramble";
-import { useMagnetic } from "@/hooks/useMagnetic";
+/**
+ * Navigation — v4.0
+ *
+ * Top bar:  [hamburger]  GENISYS  [music-icon]
+ *
+ * Hamburger opens a full left-drawer containing:
+ *   • Nav links (WORK / SERVICES / STUDIO / PROCESS / FAQ / SETTINGS)
+ *   • Live availability badge
+ *   • Quick-action buttons (Start a Project, Copy Email)
+ *   • Social links
+ *   • Build version footer
+ *
+ * SETTINGS navigates to the dedicated /settings page.
+ */
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion }     from "framer-motion";
+import { Menu, X, Music2, Zap } from "lucide-react";
+import { useScramble }                       from "@/hooks/useScramble";
 import { navigatePage, navigateSection, type Route } from "@/lib/router";
-import { SOCIAL } from "@/data/siteConfig";
-import SocialIcon from "@/components/SocialIcon";
+import { SOCIAL, STUDIO }                    from "@/data/siteConfig";
+import SocialIcon                            from "@/components/SocialIcon";
 
-interface Props { route: Route; }
+interface Props {
+  route:          Route;
+  musicPlaying?:  boolean;
+  onMusicToggle?: () => void;
+}
 
 const PAGE_LINKS = [
-  { label: "WORK",     action: () => navigateSection("work"),    page: null,         section: "work"    },
-  { label: "SERVICES", action: () => navigatePage("services"),   page: "services",   section: null      },
-  { label: "STUDIO",   action: () => navigatePage("studio"),     page: "studio",     section: null      },
-  { label: "PROCESS",  action: () => navigateSection("process"), page: null,         section: "process" },
+  { label: "WORK",     action: () => navigateSection("work"),    page: null,       section: "work"    },
+  { label: "SERVICES", action: () => navigatePage("services"),   page: "services", section: null      },
+  { label: "STUDIO",   action: () => navigatePage("studio"),     page: "studio",   section: null      },
+  { label: "PROCESS",  action: () => navigateSection("process"), page: null,       section: "process" },
+  { label: "FAQ",      action: () => navigateSection("faq"),     page: null,       section: "faq"     },
+  { label: "SETTINGS", action: () => navigatePage("settings"),   page: "settings", section: null      },
 ] as const;
 
-const SOCIAL_LABELS: Record<string, string> = {
-  instagram: "IG", twitter: "X", behance: "BE",
-  dribbble: "DR", tiktok: "TK", linkedin: "LI",
-  youtube: "YT", pinterest: "PI",
-};
+export default function Navigation({ route, musicPlaying, onMusicToggle }: Props) {
+  const brand                      = useScramble("GENISYS", 900);
+  const [open,        setOpen]     = useState(false);
+  const [activeSection, setActive] = useState("");
+  const eqDelays = [0, 0.18, 0.36, 0.12];
 
-export default function Navigation({ route }: Props) {
-  const brand   = useScramble("GENISYS", 900);
-  const [open,          setOpen]          = useState(false);
-  const [activeSection, setActiveSection] = useState<string>("");
-  const menuRef = useMagnetic<HTMLButtonElement>(0.25);
-
-  // FIX-3: Scroll-spy via IntersectionObserver — only on home page
+  // Scroll-spy — keep last active section highlighted
   useEffect(() => {
-    if (route.page !== "home") { setActiveSection(""); return; }
+    if (route.page !== "home") return;
     if (typeof IntersectionObserver === "undefined") return;
-    const SECTION_IDS = ["work", "about", "process", "faq"];
     const obs = new IntersectionObserver(
-      entries => {
-        entries.forEach(e => { if (e.isIntersecting) setActiveSection(e.target.id); });
-      },
-      { rootMargin: "-25% 0px -65% 0px", threshold: 0 },
+      entries => { entries.forEach(e => { if (e.isIntersecting) setActive(e.target.id); }); },
+      { rootMargin: "-15% 0px -55% 0px", threshold: 0 },
     );
-    SECTION_IDS.forEach(id => {
+    ["work", "about", "process", "faq"].forEach(id => {
       const el = document.getElementById(id);
       if (el) obs.observe(el);
     });
     return () => obs.disconnect();
   }, [route.page]);
 
+  // Lock scroll when drawer open
   useEffect(() => {
     if (!open) return;
     const sw = window.innerWidth - document.documentElement.clientWidth;
     document.body.style.overflow     = "hidden";
-    document.body.style.paddingRight = sw + "px";
-    return () => { document.body.style.overflow = ""; document.body.style.paddingRight = ""; };
+    document.body.style.paddingRight = `${sw}px`;
+    return () => {
+      document.body.style.overflow     = "";
+      document.body.style.paddingRight = "";
+    };
   }, [open]);
 
   useEffect(() => { setOpen(false); }, [route]);
 
-  const close = () => setOpen(false);
-
-  const isActive = (link: typeof PAGE_LINKS[number]) => {
-    // Match by route page
-    if (link.page && route.page === link.page) return true;
-    // Match by scroll-spy section (only on home)
-    if (link.section && route.page === "home" && activeSection === link.section) return true;
+  const isActive = (l: typeof PAGE_LINKS[number]) => {
+    if (l.page    && route.page === l.page)                                return true;
+    if (l.section && route.page === "home" && activeSection === l.section) return true;
     return false;
   };
 
+
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-[70] flex items-center justify-between px-4 sm:px-8 pt-4">
+      {/* ── Top bar ─────────────────────────────────────────── */}
+      <header
+        className="fixed top-0 left-0 right-0 z-[70] flex items-center justify-between px-3"
+        style={{
+          height:               "56px",
+          background:           "rgba(0,0,0,0.78)",
+          backdropFilter:       "blur(22px)",
+          WebkitBackdropFilter: "blur(22px)",
+          borderBottom:         "1px solid hsl(var(--gold)/0.1)",
+        }}
+      >
+        <button
+          onClick={() => setOpen(true)}
+          aria-label="Open menu"
+          aria-expanded={open}
+          className="grid place-items-center w-10 h-10 rounded-xl transition-colors hover:bg-white/[0.06] text-cream/65 hover:text-gold"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
         <button
           onClick={() => navigateSection("top")}
-          className="font-display font-black text-base sm:text-lg gold-text tracking-tight"
+          className="font-display font-black text-base gold-text tracking-tight select-none"
         >
           {brand}
         </button>
 
-        {/* Desktop nav */}
-        <nav className="hidden sm:flex items-center gap-1 glass rounded-full px-3 py-1.5">
-          {PAGE_LINKS.map(l => (
-            <DesktopNavLink
-              key={l.label}
-              label={l.label}
-              active={isActive(l)}
-              onClick={l.action}
-            />
-          ))}
-        </nav>
-
-        {/* Mobile hamburger */}
         <button
-          ref={menuRef}
-          onClick={() => setOpen(true)}
-          aria-label="Open navigation"
-          className="sm:hidden grid place-items-center w-10 h-10 rounded-full glass gold-border-glow"
+          onClick={onMusicToggle}
+          aria-label={musicPlaying ? "Music playing — open player" : "Open music player"}
+          className="grid place-items-center w-10 h-10 rounded-xl transition-colors hover:bg-white/[0.06]"
         >
-          <Menu className="w-4 h-4 text-gold" />
+          {musicPlaying ? (
+            <span className="flex items-end gap-[2.5px] h-4" aria-hidden>
+              {eqDelays.map((delay, i) => (
+                <span
+                  key={i}
+                  className="eq-bar w-[2.5px] rounded-sm"
+                  style={{
+                    height: "100%", background: "hsl(var(--gold))",
+                    animationDelay: `${delay}s`, transformOrigin: "bottom",
+                    boxShadow: "0 0 5px hsl(var(--gold)/0.7)",
+                  }}
+                />
+              ))}
+            </span>
+          ) : (
+            <Music2 className="w-4 h-4 text-cream/50 hover:text-gold transition-colors" />
+          )}
         </button>
       </header>
 
-      {/* Mobile overlay */}
+      <div style={{ height: "56px" }} aria-hidden />
+
+      {/* ── Drawer ──────────────────────────────────────────── */}
       <AnimatePresence>
         {open && (
-          <motion.div
-            initial={{ opacity: 0, clipPath: "circle(0% at 95% 5%)" }}
-            animate={{ opacity: 1, clipPath: "circle(150% at 95% 5%)" }}
-            exit={{   opacity: 0, clipPath: "circle(0% at 95% 5%)" }}
-            transition={{ duration: 0.5, ease: [0.7, 0, 0.3, 1] }}
-            className="fixed inset-0 z-[150] flex flex-col justify-between py-16 px-8 sm:hidden"
-            style={{ background: "rgba(0,0,0,0.97)", backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)" }}
-          >
-            <button
-              onClick={close}
-              aria-label="Close navigation"
-              style={{ position: "fixed", top: "max(calc(env(safe-area-inset-top,0px) + 12px), 16px)", right: "16px" }}
-              className="grid place-items-center w-11 h-11 rounded-full glass-strong gold-border-glow z-10"
+          <>
+            <motion.div
+              key="backdrop"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.28 }}
+              className="fixed inset-0 z-[148]"
+              style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}
+              onClick={() => setOpen(false)}
+            />
+
+            <motion.div
+              key="drawer"
+              initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
+              transition={{ duration: 0.38, ease: [0.7, 0, 0.3, 1] }}
+              className="fixed top-0 left-0 bottom-0 z-[149] flex flex-col overflow-hidden"
+              style={{
+                width:                "min(320px, 88vw)",
+                background:           "rgba(5,5,5,0.98)",
+                backdropFilter:       "blur(40px)",
+                WebkitBackdropFilter: "blur(40px)",
+                borderRight:          "1px solid hsl(var(--gold)/0.14)",
+              }}
             >
-              <X className="w-5 h-5 text-gold" />
-            </button>
-
-            <nav className="flex flex-col gap-8 mt-8">
-              {PAGE_LINKS.map((l, i) => (
-                <motion.button
-                  key={l.label}
-                  onClick={() => { l.action(); close(); }}
-                  initial={{ opacity: 0, x: -30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: 0.1 + i * 0.08, ease: [0.7, 0, 0.3, 1] }}
-                  className={
-                    "font-display font-black text-5xl tracking-tight text-left transition-colors " +
-                    (isActive(l) ? "gold-text" : "text-cream/80")
-                  }
+              {/* Drawer header */}
+              <div className="flex items-center justify-between px-5 py-4 flex-none"
+                style={{ borderBottom: "1px solid hsl(0 0% 100% / 0.055)" }}>
+                <div className="flex items-center gap-2.5">
+                  <span className="font-display font-black text-sm gold-text tracking-tight">GENISYS</span>
+                  {STUDIO.availability.accepting && (
+                    <span
+                      className="flex items-center gap-1.5 px-2 py-0.5 rounded-full font-mono text-[8px] tracking-[0.2em]"
+                      style={{ background: "hsl(142 70% 45% / 0.12)", border: "1px solid hsl(142 70% 45% / 0.3)", color: "hsl(142 70% 55%)" }}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                      OPEN
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => setOpen(false)}
+                  aria-label="Close menu"
+                  className="grid place-items-center w-8 h-8 rounded-xl text-cream/35 hover:text-gold transition-colors"
+                  style={{ background: "hsl(0 0% 100% / 0.04)", border: "1px solid hsl(0 0% 100% / 0.07)" }}
                 >
-                  {l.label}
-                </motion.button>
-              ))}
-            </nav>
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
 
-            <div className="space-y-6">
-              <motion.button
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.5, ease: [0.7, 0, 0.3, 1] }}
-                onClick={() => { close(); window.dispatchEvent(new Event("open-contact")); }}
-                className="w-full py-3 rounded-full glass-strong gold-border-glow font-mono text-xs tracking-[0.3em] text-gold"
-              >
-                START A PROJECT
-              </motion.button>
-              <motion.div
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 }}
-                className="flex flex-wrap gap-3"
-              >
-                {Object.entries(SOCIAL).map(([platform, url]) => (
-                  <a
-                    key={platform} href={url} target="_blank" rel="noopener noreferrer"
-                    className="w-9 h-9 grid place-items-center rounded-lg font-mono text-[10px] font-bold transition-all hover:scale-110"
-                    style={{ background: "hsl(var(--gold)/0.08)", border: "1px solid hsl(var(--gold)/0.2)", color: "hsl(var(--gold)/0.7)" }}
+              {/* Scrollable body */}
+              <div className="flex-1 overflow-y-auto overscroll-contain" style={{ scrollbarWidth: "none" }}>
+
+                {/* ── Nav links ──────────────────────────── */}
+                <div className="px-3 pt-4 pb-2">
+                  <p className="font-mono text-[8px] tracking-[0.45em] text-gold/40 px-2 mb-2">NAVIGATE</p>
+                  <nav className="flex flex-col gap-0.5">
+                    {PAGE_LINKS.map((l, i) => (
+                      <motion.button
+                        key={l.label}
+                        onClick={() => { if (l.section) setActive(l.section); l.action(); setOpen(false); }}
+                        initial={{ opacity: 0, x: -18 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.28, delay: 0.05 + i * 0.06, ease: [0.7, 0, 0.3, 1] }}
+                        className={
+                          "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors " +
+                          (isActive(l) ? "bg-gold/[0.09]" : "hover:bg-white/[0.04]")
+                        }
+                      >
+                        {isActive(l) && (
+                          <span className="w-[3px] h-4 rounded-full flex-none" style={{ background: "hsl(var(--gold))" }} />
+                        )}
+                        <span className={"font-mono text-[11px] tracking-[0.32em] " + (isActive(l) ? "text-gold" : "text-cream/65")}>
+                          {l.label}
+                        </span>
+                      </motion.button>
+                    ))}
+                  </nav>
+                </div>
+
+                <div className="mx-5 my-3" style={{ height: "1px", background: "hsl(0 0% 100% / 0.055)" }} />
+
+                {/* ── Quick actions ──────────────────────── */}
+                <div className="px-3 pb-2">
+                  <p className="font-mono text-[8px] tracking-[0.45em] text-gold/40 px-2 mb-2">QUICK ACTIONS</p>
+
+                  <motion.button
+                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.28, delay: 0.44 }}
+                    onClick={() => { setOpen(false); window.dispatchEvent(new Event("open-contact")); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-colors hover:bg-gold/[0.07] mb-1"
+                    style={{ border: "1px solid hsl(var(--gold)/0.2)", background: "hsl(var(--gold)/0.04)" }}
                   >
-                    <SocialIcon platform={platform} size={15} />
-                  </a>
-                ))}
-              </motion.div>
-            </div>
-          </motion.div>
+                    <Zap className="w-4 h-4 text-gold flex-none" />
+                    <div>
+                      <p className="font-mono text-[10px] tracking-[0.25em] text-gold">START A PROJECT</p>
+                      {STUDIO.availability.accepting && (
+                        <p className="font-mono text-[8px] text-cream/30 mt-0.5">
+                          Next slot: {STUDIO.availability.nextSlot}
+                        </p>
+                      )}
+                    </div>
+                  </motion.button>
+
+                </div>
+
+                <div className="mx-5 my-3" style={{ height: "1px", background: "hsl(0 0% 100% / 0.055)" }} />
+
+                {/* ── Socials ────────────────────────────── */}
+                <div className="px-5 pb-4">
+                  <p className="font-mono text-[8px] tracking-[0.45em] text-gold/40 mb-3">FOLLOW</p>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(SOCIAL).map(([platform, url]) => (
+                      <a
+                        key={platform}
+                        href={url} target="_blank" rel="noopener noreferrer"
+                        aria-label={platform}
+                        className="w-9 h-9 grid place-items-center rounded-xl transition-all hover:scale-110"
+                        style={{ background: "hsl(var(--gold)/0.07)", border: "1px solid hsl(var(--gold)/0.18)", color: "hsl(var(--gold)/0.65)" }}
+                      >
+                        <SocialIcon platform={platform} size={14} />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Drawer footer */}
+              <div
+                className="flex-none px-5 py-3 flex items-center justify-between"
+                style={{ borderTop: "1px solid hsl(0 0% 100% / 0.055)" }}
+              >
+                <p className="font-mono text-[7px] tracking-[0.3em] text-cream/15">
+                  GENISYS GRAPHICS © {new Date().getFullYear()}
+                </p>
+                <p className="font-mono text-[7px] tracking-[0.2em] text-cream/12">v4.1.0</p>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </>
-  );
-}
-
-function DesktopNavLink({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  const text = useScramble(label, 700);
-  const ref  = useMagnetic<HTMLButtonElement>(0.3);
-  return (
-    <button
-      ref={ref} onClick={onClick}
-      className={
-        "font-mono text-[11px] tracking-[0.35em] transition-colors px-2 py-1 " +
-        (active ? "text-gold" : "text-cream/80 hover:text-gold")
-      }
-    >
-      {text}
-    </button>
   );
 }
